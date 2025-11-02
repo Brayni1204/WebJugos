@@ -1,0 +1,55 @@
+@import "style.css";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+.social-icon {
+    position: relative;
+    transition: transform 0.3s ease-in-out;
+}
+
+.social-icon:hover {
+    transform: scale(1.2);
+}
+
+/* Pseudo-elemento para el efecto glow */
+.social-icon::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    transform: translate(-50%, -50%) scale(0);
+    transition: transform 0.3s ease-in-out, opacity 0.3s ease-in-out;
+    filter: blur(10px);
+    opacity: 0;
+}
+
+/* Glow de cada red social */
+.social-icon.text-blue-600::after { background: rgba(24, 119, 242, 0.6); } /* Facebook */
+.social-icon.text-pink-500::after { background: rgba(228, 64, 95, 0.6); } /* Instagram */
+.social-icon.text-black::after { background: rgba(0, 0, 0, 0.6); } /* TikTok */
+.social-icon.text-green-500::after { background: rgba(37, 211, 102, 0.6); } /* WhatsApp */
+
+.social-icon:hover::after {
+    transform: translate(-50%, -50%) scale(1.5);
+    opacity: 1;
+}
+.pagination .page-link {
+    color: white !important;
+    background-color: #2563eb !important; /* Azul */
+    border-radius: 6px;
+    padding: 8px 12px;
+}
+
+.pagination .page-item.active .page-link {
+    background-color: #1e40af !important; /* Azul oscuro */
+    border: none;
+}
+
+.pagination .page-link:hover {
+    background-color: #1e3a8a !important;
+}
+ 
