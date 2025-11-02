@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Admin;
+namespace App\Http\Controllers\admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Pagina;
@@ -63,7 +63,7 @@ class PaginaController extends Controller
     {
         return view('admin.paginas.edit', compact('pagina'));
     }
-     
+
     public function update(Request $request, Pagina $pagina)
     {
         if ($request->has('status')) {

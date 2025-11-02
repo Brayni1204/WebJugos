@@ -1,9 +1,9 @@
 @extends('adminlte::page')
-@section('title', 'Admin Jugueria')
+@section('title', 'admin Jugueria')
 @section('content')
     <div class="flex flex-col items-center justify-center min-h-[90vh] bg-gradient-to-r   px-4">
         <div class="max-w-3xl w-full p-8 text-center">
-            <h1 class="text-3xl md:text-4xl font-extrabold text-gray-800 mb-4">Admin Juguería</h1>
+            <h1 class="text-3xl md:text-4xl font-extrabold text-gray-800 mb-4">admin Juguería</h1>
             @php
                 $menu = App\Models\Empresa::get();
                 $ultimaImagen = $menu->isNotEmpty() ? $menu->first()->image_m()->latest()->first() : null;

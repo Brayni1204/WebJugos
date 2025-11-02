@@ -50,7 +50,7 @@
                 @endif
 
                 {{-- Logo Label --}}
-                {!! config('adminlte.logo', '<b>Admin</b>LTE') !!}
+                {!! config('adminlte.logo', '<b>admin</b>LTE') !!}
 
             </a>
         </div>

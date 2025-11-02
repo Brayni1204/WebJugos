@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Livewire\Admin;
+namespace App\Livewire\admin;
 
 use App\Models\Cliente;
 use Livewire\Component;
@@ -20,7 +20,7 @@ class ClienteBusqueda extends Component
     }
 
     public function setCliente($nombre)
-    
+
     {
         $this->search = $nombre; // Asigna el nombre al campo de búsqueda
     }

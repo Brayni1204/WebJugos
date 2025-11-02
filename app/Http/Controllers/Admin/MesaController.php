@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Admin;
+namespace App\Http\Controllers\admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Mesa;
@@ -20,8 +20,8 @@ class MesaController extends Controller
 
     public function create()
     {
-        $ultimaMesa = Mesa::latest()->first(); 
-        $numeroMesa = $ultimaMesa ? $ultimaMesa->numero_mesa + 1 : 1; 
+        $ultimaMesa = Mesa::latest()->first();
+        $numeroMesa = $ultimaMesa ? $ultimaMesa->numero_mesa + 1 : 1;
         return view('admin.mesas.create', compact('numeroMesa'));
     }
     public function store(Request $request)
@@ -34,7 +34,7 @@ class MesaController extends Controller
             'estado' => 'disponible',
             'uuid' => Str::uuid(),
         ]);
-        $token = Crypt::encryptString($mesa->uuid); 
+        $token = Crypt::encryptString($mesa->uuid);
         $url = route('views.reservar', ['token' => $token]);
         $qrCode = new QrCode($url);
         $writer = new PngWriter();
@@ -53,7 +53,7 @@ class MesaController extends Controller
 
     public function toggleStatus(Mesa $mesa)
     {
-        $mesa->status = $mesa->status == '1' ? '0' : '1';   
+        $mesa->status = $mesa->status == '1' ? '0' : '1';
         $mesa->save();
 
         return redirect()->route('admin.mesas.index')->with('success', 'Estado de la mesa actualizado correctamente.');
