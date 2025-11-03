@@ -74,12 +74,10 @@ class RouteServiceProvider extends ServiceProvider
      */
     public function boot()
     {
-        $this->routes(function () {
-            Route::middleware('web', 'auth')
-                ->prefix('admin')
-                ->namespace($this->namespace)
-                ->group(base_path('routes/admin.php'));
-        });
+        Route::middleware('web', 'auth')
+            ->prefix('admin')
+            ->namespace($this->namespace) // <- Ejemplo de namespace
+            ->group(base_path('routes/admin.php'));
     }
 
     /**
