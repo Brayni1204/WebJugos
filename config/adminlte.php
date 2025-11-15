@@ -158,12 +158,6 @@ return [
             'can'   => 'admin.pedidos.index',
         ],
         [
-            'text' => 'Ventas',
-            'icon' => 'fas fa-shopping-cart',
-            'route' => 'admin.ventas.index',
-            'can'   => 'admin.ventas.index',
-        ],
-        [
             'text' => 'Categorias',
             'route' => 'admin.categoria.index',
             'icon' => 'fas fa-tags',

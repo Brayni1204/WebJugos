@@ -99,6 +99,27 @@
             }
 
         }
+
+        #opcionesProductoModal,
+        #opcionesProductoOverlay {
+            transition: opacity 0.3s ease-in-out;
+            z-index: 9999;
+        }
+
+        #opcionesProductoModal {
+            transition: transform 0.3s ease-in-out, opacity 0.3s ease-in-out;
+        }
+
+        #opcionesProductoModal.hidden {
+            transform: translate(-50%, -50%) scale(0.95);
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        #opcionesProductoOverlay.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
     </style>
 </head>
 
@@ -107,47 +128,85 @@
         <div>
             <div class="contenedor" style="display: flex; width: 100%;">
                 <div class="contenedor--pedido">
-                    <div style="padding: 20px">
+                    <div style="padding: 10px">
                         <div style="padding: 10px">
                             <div style="display: flex; justify-content: center">
                                 <h1>Pedidos Mesa N° - {{ $mesa->id }}</h1>
                             </div>
                         </div>
                         <div>
-                            <div style="display: flex; justify-content: center; padding-bottom: 20px">
-                                <h2>Jugos en Tu Pedido</h2>
+                            <div class="text-center mb-6">
+                                <h2 class="text-2xl font-bold text-gray-800">Tu Pedido Actual</h2>
                             </div>
-                            <div id="lista-productos-cliente"
-                                style="width: 100%; display: flex; flex-wrap: wrap; gap: 0.5rem; justify-content: center;">
+
+                            <div id="lista-productos-cliente" class="space-y-3 px-4 overflow-y-auto"
+                                style="max-height: 12.5rem;">
+
                                 @foreach ($pedido->detalles as $detalle)
-                                    <div
-                                        style="border-radius: 0.5rem; background-color: #f3f3f3; padding: 8px; width: 6rem; display: flex; flex-direction: column; align-items: center; box-shadow: 2px 2px 8px rgba(0, 0, 0, 0.1);">
-                                        <!-- Imagen del producto -->
-                                        <div
-                                            style="width: 5rem; height: 5rem; overflow: hidden; border-radius: 0.5rem;">
-                                            @if ($detalle->producto->image->isNotEmpty())
-                                                <img src="{{ asset('storage/' . $detalle->producto->image->first()->url) }}"
-                                                    alt="{{ $detalle->nombre_producto }}"
-                                                    style="width: 100%; height: 100%; object-fit: cover;">
-                                            @else
-                                                <div
-                                                    style="width: 100%; height: 100%; background-color: #ccc; display: flex; align-items: center; justify-content: center;">
-                                                    <span style="color: #666; font-size: 10px;">Sin Imagen</span>
+                                    @php
+                                        $descripcion = $detalle->descripcion;
+                                        $nombreBase = $detalle->nombre_producto;
+                                        $customizaciones = '';
+                                        $customTags = []; // Inicializa el array de tags
+                                        if (str_contains($descripcion, '(')) {
+                                            $parts = explode('(', $descripcion, 2);
+                                            $nombreBase = trim($parts[0]);
+                                            $customizaciones = rtrim(trim($parts[1]), ')');
+                                            if (!empty($customizaciones)) {
+                                                // Divide las customizaciones en tags individuales
+                                                $customTags = explode(',', $customizaciones);
+                                            }
+                                        }
+                                    @endphp
+
+                                    <div class="bg-white p-3 rounded-lg shadow-sm w-full">
+                                        <div class="flex items-center gap-3">
+
+                                            <div
+                                                class="w-16 h-16 flex-shrink-0 overflow-hidden rounded-md border border-gray-200">
+                                                @if ($detalle->producto->image->isNotEmpty())
+                                                    <img src="{{ asset('storage/' . $detalle->producto->image->first()->url) }}"
+                                                        alt="{{ $nombreBase }}" class="w-full h-full object-cover">
+                                                @else
+                                                    <div
+                                                        class="w-full h-full bg-gray-100 flex items-center justify-center">
+                                                        <svg class="w-8 h-8 text-gray-400" fill="none"
+                                                            stroke="currentColor" viewBox="0 0 24 24"
+                                                            xmlns="http://www.w3.org/2000/svg">
+                                                            <path stroke-linecap="round" stroke-linejoin="round"
+                                                                stroke-width="2"
+                                                                d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l-1.586-1.586a2 2 0 00-2.828 0L6 14m6-6l.01.01">
+                                                            </path>
+                                                        </svg>
+                                                    </div>
+                                                @endif
+                                            </div>
+
+                                            <div class="flex-grow">
+                                                <div class="flex items-start justify-between">
+                                                    <div>
+                                                        <p class="font-bold text-gray-800 text-xs">{{ $nombreBase }}
+                                                        </p>
+                                                        <p class="text-sm text-gray-500">
+                                                            S/{{ number_format($detalle->precio_total, 2) }}
+                                                        </p>
+                                                    </div>
+                                                    <div
+                                                        class="bg-blue-600 text-white text-xs font-bold rounded-full h-6 w-6 flex items-center justify-center shadow-md flex-shrink-0">
+                                                        {{ $detalle->cantidad }}x
+                                                    </div>
                                                 </div>
-                                            @endif
-                                        </div>
 
-                                        <!-- Información del producto -->
-                                        <div style="text-align: center; font-size: 12px; margin-top: 4px;">
-                                            <strong
-                                                style="display: block; font-size: 16px;">{{ $detalle->nombre_producto }}</strong>
-                                            <p style="margin: 2px 0; font-size: 13px;">Cantidad:
-                                                <strong>{{ $detalle->cantidad }}</strong>
-                                            </p>
-                                            <p style="margin: 2px 0; font-size: 16px; color: #702727;">
-                                                S/{{ number_format($detalle->precio_total, 2) }}</p>
+                                                @if (!empty($customTags))
+                                                    <div class="mt-1.5 flex flex-wrap gap-1.5">
+                                                        @foreach ($customTags as $tag)
+                                                            <span
+                                                                class="text-xs bg-gray-200 text-gray-600 px-2 py-1 rounded-full">{{ trim($tag) }}</span>
+                                                        @endforeach
+                                                    </div>
+                                                @endif
+                                            </div>
                                         </div>
-
                                     </div>
                                 @endforeach
                             </div>
@@ -155,7 +214,7 @@
                         </div>
                     </div>
 
-                    <div style="padding: 20px">
+                    <div style="padding: 0px">
                         <div>
                             <!-- Título de la sección -->
                             <div>
@@ -206,11 +265,10 @@
                                         }
                                     @endphp
                                     <button {{-- Usamos la variable $imageUrl precalculada --}}
-                                        onclick="agregarAlCarrito({{ $producto->id }}, '{{ $producto->nombre_producto }}', {{ $producto->precios->precio_venta ?? 0 }}, '{{ $imageUrl }}')"
+                                        onclick="mostrarOpcionesProducto({{ $producto->id }}, '{{ $producto->nombre_producto }}', {{ $producto->precios->precio_venta ?? 0 }}, '{{ $imageUrl }}')"
                                         class="producto bg-white border border-gray-300 rounded-lg p-4 shadow-md hover:shadow-xl hover:scale-105 transition transform duration-300 ease-in-out flex flex-col items-center"
                                         data-nombre="{{ strtolower($producto->nombre_producto) }}">
-                                        <div class="w-full
-            aspect-[4/5] overflow-hidden rounded-md">
+                                        <div class="w-full aspect-[4/5] overflow-hidden rounded-md">
                                             @if ($producto->image->isNotEmpty())
                                                 <img src="{{ asset('storage/' . $producto->image->first()->url) }}"
                                                     alt="{{ $producto->nombre_producto }}"
@@ -285,24 +343,193 @@
 
         <!-- Botón flotante para mostrar el carrito en móviles -->
         <button id="toggleAside"
-            style="position: fixed; bottom: 20px; right: 20px; background: #135287; color: white; border: none; padding: 12px 16px; border-radius: 50%; font-size: 16px; cursor: pointer; z-index: 1000;">
-            🛒 <span id="contadorProductos">0</span>
+            class="sm:hidden fixed bottom-5 right-5 bg-blue-600 text-white w-16 h-16 rounded-full flex items-center justify-center shadow-lg text-2xl hover:bg-blue-700 transition-colors z-1000">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7" fill="none" viewBox="0 0 24 24"
+                stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round"
+                    d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+            </svg><span id="contadorProductos"
+                class="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full h-6 w-6 flex items-center justify-center">0</span>
         </button>
 
+        <!-- Modal para Opciones de Producto -->
+        <div id="opcionesProductoOverlay" onclick="cerrarOpcionesProductoModal()"
+            class="hidden fixed inset-0 bg-black bg-opacity-60 z-40"></div>
+
+        <div id="opcionesProductoModal"
+            class="hidden fixed top-1/2 left-1/2 w-11/12 max-w-sm bg-white rounded-2xl shadow-xl z-50 p-6 transform -translate-x-1/2 -translate-y-1/2">
+            <h3 id="opcionesProductoNombre" class="text-2xl font-bold text-gray-800 mb-2 text-center"></h3>
+            <p class="text-center text-gray-500 mb-6">Puedes Agregar Sugerencias</p>
+
+            <div class="space-y-5">
+                <!-- Temperatura -->
+                <div>
+                    <h4 class="font-semibold text-gray-700 mb-2">Temperatura</h4>
+                    <div class="flex flex-wrap gap-2 grupo-temperatura">
+                        <label class="flex-1">
+                            <input type="checkbox" name="caracteristicas_modal[]" value="helado" class="hidden">
+                            <span
+                                class="block text-center p-1 rounded-lg border border-gray-200 bg-gray-50 cursor-pointer transition-all duration-200">Helado</span>
+                        </label>
+                        <label class="flex-1">
+                            <input type="checkbox" name="caracteristicas_modal[]" value="temperado" class="hidden">
+                            <span
+                                class="block text-center p-1 rounded-lg border border-gray-200 bg-gray-50 cursor-pointer transition-all duration-200">Temperado</span>
+                        </label>
+                        <label class="flex-1">
+                            <input type="checkbox" name="caracteristicas_modal[]" value="temperatura ambiente"
+                                class="hidden">
+                            <span
+                                class="block text-center p-1 rounded-lg border border-gray-200 bg-gray-50 cursor-pointer transition-all duration-200">Ambiente</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Azúcar -->
+                <div>
+                    <h4 class="font-semibold text-gray-700 mb-2">Nivel de Azúcar</h4>
+                    <div class="flex flex-wrap gap-2 grupo-azucar">
+                        <label class="flex-1">
+                            <input type="checkbox" name="caracteristicas_modal[]" value="con azúcar" class="hidden">
+                            <span
+                                class="block text-center p-1 rounded-lg border border-gray-200 bg-gray-50 cursor-pointer transition-all duration-200">Normal</span>
+                        </label>
+                        <label class="flex-1">
+                            <input type="checkbox" name="caracteristicas_modal[]" value="bajo en azúcar"
+                                class="hidden">
+                            <span
+                                class="block text-center p-1 rounded-lg border border-gray-200 bg-gray-50 cursor-pointer transition-all duration-200">Bajo</span>
+                        </label>
+                        <label class="flex-1">
+                            <input type="checkbox" name="caracteristicas_modal[]" value="sin azúcar" class="hidden">
+                            <span
+                                class="block text-center p-1 rounded-lg border border-gray-200 bg-gray-50 cursor-pointer transition-all duration-200">Sin
+                                Azúcar</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Observación -->
+                <div>
+                    <textarea id="observacion" name="observacion" rows="2" placeholder="Observación adicional"
+                        class="w-full p-2 mt-1 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"></textarea>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-4 mt-8">
+                <button type="button" onclick="cerrarOpcionesProductoModal()"
+                    class="w-full text-center py-3 px-4 bg-gray-200 text-gray-800 font-semibold rounded-lg hover:bg-gray-300 transition">Cancelar</button>
+                <button type="button" id="anadirAlCarritoBtn"
+                    class="w-full text-center py-3 px-4 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition shadow-lg shadow-blue-500/20">Añadir
+                </button>
+            </div>
+        </div>
+        <div id="opcionesProductoOverlay"
+            style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.5); z-index: 2500;"
+            onclick="cerrarOpcionesProductoModal()"></div>
+
         <script>
+            let productoParaAnadir = null;
+
+            function mostrarOpcionesProducto(id, nombre, precio, imagen) {
+                productoParaAnadir = {
+                    id,
+                    nombre,
+                    precio,
+                    imagen
+                };
+                document.getElementById('opcionesProductoNombre').innerText = nombre;
+
+                // Reset
+                document.querySelectorAll('#opcionesProductoModal input[type="checkbox"]').forEach(cb => {
+                    cb.checked = false;
+                    const span = cb.nextElementSibling;
+                    span.classList.remove('bg-blue-600', 'text-white', 'border-blue-500', 'shadow-md');
+                    span.classList.add('bg-gray-50', 'border-gray-200');
+                });
+                document.getElementById('observacion').value = '';
+
+                document.getElementById('opcionesProductoModal').classList.remove('hidden');
+                document.getElementById('opcionesProductoOverlay').classList.remove('hidden');
+
+                document.getElementById('anadirAlCarritoBtn').onclick = () => agregarAlCarritoDesdeModal();
+            }
+
+            function cerrarOpcionesProductoModal() {
+                document.getElementById('opcionesProductoModal').classList.add('hidden');
+                document.getElementById('opcionesProductoOverlay').classList.add('hidden');
+                productoParaAnadir = null;
+            }
+
+            function agregarAlCarritoDesdeModal() {
+                if (!productoParaAnadir) return;
+
+                let caracteristicasSeleccionadas = Array.from(document.querySelectorAll(
+                        '#opcionesProductoModal input[name="caracteristicas_modal[]"]:checked'))
+                    .map(cb => cb.value);
+
+                let observacion = document.getElementById('observacion').value.trim();
+                if (observacion) {
+                    caracteristicasSeleccionadas.push(observacion);
+                }
+
+                agregarAlCarrito(productoParaAnadir.id, productoParaAnadir.nombre, productoParaAnadir.precio,
+                    productoParaAnadir.imagen, caracteristicasSeleccionadas);
+
+                cerrarOpcionesProductoModal();
+            }
+
             document.addEventListener("DOMContentLoaded", () => {
                 actualizarCarrito();
                 actualizarContador();
+
+                document.querySelectorAll('.grupo-temperatura label, .grupo-azucar label').forEach(label => {
+                    const checkbox = label.querySelector('input[type="checkbox"]');
+                    const span = label.querySelector('span');
+
+                    const updateGroupStyle = (groupClass) => {
+                        document.querySelectorAll(`.${groupClass} label`).forEach(l => {
+                            const cb = l.querySelector('input[type="checkbox"]');
+                            const sp = l.querySelector('span');
+                            if (cb.checked) {
+                                sp.classList.add('bg-blue-600', 'text-white', 'border-blue-500',
+                                    'shadow-md');
+                                sp.classList.remove('bg-gray-50', 'border-gray-200');
+                            } else {
+                                sp.classList.remove('bg-blue-600', 'text-white',
+                                    'border-blue-500', 'shadow-md');
+                                sp.classList.add('bg-gray-50', 'border-gray-200');
+                            }
+                        });
+                    };
+
+                    checkbox.addEventListener('change', () => {
+                        const group = label.parentElement.classList.contains('grupo-temperatura') ?
+                            'grupo-temperatura' : 'grupo-azucar';
+                        if (checkbox.checked) {
+                            document.querySelectorAll(`.${group} input[type="checkbox"]`).forEach(
+                                otherCheckbox => {
+                                    if (otherCheckbox !== checkbox) {
+                                        otherCheckbox.checked = false;
+                                    }
+                                });
+                        }
+                        updateGroupStyle(group);
+                    });
+                });
             });
 
             let carrito = [];
             let totalDetalle = {{ $pedido->detalles->sum('precio_total') }}; // Suma de los productos ya agregados en el pedido
             document.getElementById("totalDetalle").innerText = totalDetalle.toFixed(2);
 
-            function agregarAlCarrito(id, nombre, precio, imagen) {
+            function agregarAlCarrito(id, nombre, precio, imagen, caracteristicas) {
                 let carrito = JSON.parse(localStorage.getItem("carrito")) || [];
 
-                let productoEnCarrito = carrito.find(producto => producto.id === id);
+                const caracteristicasKey = (caracteristicas || []).sort().join(',');
+                let productoEnCarrito = carrito.find(p => p.id === id && ((p.caracteristicas || []).sort().join(
+                    ',') === caracteristicasKey));
+
 
                 if (productoEnCarrito) {
                     productoEnCarrito.cantidad += 1;
@@ -312,7 +539,8 @@
                         nombre,
                         precio,
                         cantidad: 1,
-                        imagen: imagen || null
+                        imagen: imagen || null,
+                        caracteristicas: caracteristicas || []
                     });
                 }
 
@@ -324,51 +552,64 @@
 
 
             function actualizarCarrito() {
-                let carritoLista = document.getElementById("carritoLista");
-                let totalPedido = document.getElementById("totalPedido");
-                let totalDetallePagar = document.getElementById("totalDetallePagar");
-                let totalDetalleModal = document.getElementById("totalDetalleModal");
+                const carritoLista = document.getElementById("carritoLista");
+                const totalPedido = document.getElementById("totalPedido");
+                const totalDetallePagar = document.getElementById("totalDetallePagar");
 
-
-                let carrito = JSON.parse(localStorage.getItem("carrito")) || [];
-                carritoLista.innerHTML = "";
-                // 🚨 Verifica si los elementos existen antes de intentar modificar sus valores
-                if (!carritoLista || !totalPedido || !totalDetallePagar || !totalDetalleModal) {
-                    console.error("Uno o más elementos del carrito no existen en el DOM.");
-                    return;
+                if (!carritoLista || !totalPedido || !totalDetallePagar) {
+                    return; // Sidebar not present, do nothing
                 }
 
-
+                const carrito = JSON.parse(localStorage.getItem("carrito")) || [];
                 let total = 0;
+                carritoLista.innerHTML = ""; // Clear the list
 
-                carrito.forEach((producto, index) => {
-                    let div = document.createElement("div");
-                    div.classList.add("flex", "items-center", "gap-4");
+                if (carrito.length === 0) {
+                    carritoLista.innerHTML = '<p class="text-center text-gray-500 p-4">Añade productos para actualizar.</p>';
+                } else {
+                    carrito.forEach((producto, index) => {
+                        let caracteristicasHtml = '';
+                        if (producto.caracteristicas && producto.caracteristicas.length > 0) {
+                            const tags = producto.caracteristicas.map(c =>
+                                `<span class="text-xs bg-gray-200 text-gray-600 px-2 py-1 rounded-full">${c}</span>`
+                            ).join(' ');
+                            caracteristicasHtml = `<div class="mt-1.5 flex flex-wrap gap-1.5">${tags}</div>`;
+                        }
 
-                    div.innerHTML = `
-                                <div style="width: 6rem; height: 6rem; overflow: hidden; border-radius: 0.5rem;">
-                                    ${producto.imagen ? `<img src="${producto.imagen}" alt="${producto.nombre}" style="width: 100%; height: 100%; object-fit: cover;">` : 
-                                    `<div class="w-full h-full bg-gray-300 flex items-center justify-center text-gray-500"><span>Imagen No Disponible</span></div>`}
+                        const div = document.createElement("div");
+                        div.className = "bg-white p-3 rounded-lg shadow-sm w-full";
+                        div.innerHTML = `
+                        <div class="flex items-center bg-white p-1 rounded-lg shadow-sm w-full gap-3">
+                            <div class="flex h-full items-center">
+                                <div class="w-16 h-16 flex-shrink-0 overflow-hidden rounded-md border border-gray-200">
+                                    <img src="${producto.imagen || 'https://via.placeholder.com/150'}" alt="${producto.nombre}" class="w-full h-full object-cover">
                                 </div>
-                                <div>
-                                    <strong>${producto.nombre}</strong> - S/${producto.precio.toFixed(2)}
+                            </div>
+                            <div class="flex-grow">
+                                <div class="flex items-start bg-white p-1 rounded-lg shadow-sm w-full gap-3 justify-between">
+                                    <div>
+                                        <p class="font-bold text-gray-800 text-xs">${producto.nombre}</p>
+                                        <p class="text-sm text-gray-500">S/${producto.precio.toFixed(2)}</p>
+                                    </div>
+                                    <div class="flex flex-col justify-between h-full">
+                                        <div class="flex items-center gap-2">
+                                            <button onclick="cambiarCantidad(${index}, -1)" class="w-6 h-6 bg-gray-200 text-gray-600 rounded-full font-bold flex items-center justify-center transition hover:bg-gray-300">-</button>
+                                            <span class="font-bold text-lg">${producto.cantidad}</span>
+                                            <button onclick="cambiarCantidad(${index}, 1)" class="w-6 h-6 bg-gray-200 text-gray-600 rounded-full font-bold flex items-center justify-center transition hover:bg-gray-300">+</button>
+                                        </div>
+                                        <button onclick="eliminarDelCarrito(${index})" class="text-xs text-red-500 hover:text-red-700 transition mt-2">Quitar</button>
+                                    </div>
                                 </div>
-                                <button onclick="cambiarCantidad(${index}, -1)">➖</button>
-                                <span>${producto.cantidad}</span>
-                                <button onclick="cambiarCantidad(${index}, 1)">➕</button>
-                                <button onclick="eliminarDelCarrito(${index})">❌</button>
-                            `;
-
-                    carritoLista.appendChild(div);
-                    total += producto.precio * producto.cantidad;
-                });
+                                ${caracteristicasHtml}
+                            </div>
+                        </div>`;
+                        carritoLista.appendChild(div);
+                        total += producto.precio * producto.cantidad;
+                    });
+                }
 
                 totalPedido.innerText = total.toFixed(2);
                 totalDetallePagar.innerText = (total + totalDetalle).toFixed(2);
-                totalDetalleModal.innerText = totalDetalle.toFixed(2);
-
-                actualizarContador();
-                actualizarModal();
             }
 
 
@@ -378,7 +619,7 @@
                 if (carrito[index]) {
                     carrito[index].cantidad += cambio;
                     if (carrito[index].cantidad < 1) {
-                        carrito[index].cantidad = 1; // Evita cantidades menores a 1
+                        carrito.splice(index, 1);
                     }
                 }
 
@@ -405,7 +646,8 @@
                 let carrito = JSON.parse(localStorage.getItem("carrito")) || []; // Recuperar el carrito desde localStorage
 
                 if (carrito.length === 0) {
-                    Swal.fire("Sin nuevos productos", "Debes agregar productos nuevos para actualizar el pedido.", "warning");
+                    Swal.fire("Sin nuevos productos", "Debes agregar productos nuevos para actualizar el pedido.",
+                        "warning");
                     return;
                 }
 
@@ -468,49 +710,69 @@
             }
 
             function actualizarModal() {
-                let carritoListaModal = document.getElementById("carritoListaModal");
-                let totalPedidoModal = document.getElementById("totalPedidoModal");
-                let totalDetallePagarModal = document.getElementById("totalDetallePagarModal");
-                let totalDetalleModal = document.getElementById("totalDetalleModal");
+                const carritoListaModal = document.getElementById("carritoListaModal");
+                const totalPedidoModal = document.getElementById("totalPedidoModal");
+                const totalDetallePagarModal = document.getElementById("totalDetallePagarModal");
+                const totalPagarBotonModal = document.querySelector('#my-modal #totalDetalleModal');
 
-                let carrito = JSON.parse(localStorage.getItem("carrito")) || [];
-
-                // 🚨 Verifica que los elementos existen
-                if (!carritoListaModal || !totalPedidoModal || !totalDetallePagarModal || !totalDetalleModal) {
-                    console.error("Uno o más elementos del modal no existen en el DOM.");
-                    return;
+                if (!carritoListaModal || !totalPedidoModal || !totalDetallePagarModal || !totalPagarBotonModal) {
+                    return; // Modal not present or open, do nothing
                 }
 
-                carritoListaModal.innerHTML = ""; // Limpiar el modal antes de actualizarlo
+                const carrito = JSON.parse(localStorage.getItem("carrito")) || [];
                 let total = 0;
+                carritoListaModal.innerHTML = ""; // Clear the list
 
-                carrito.forEach((producto, index) => {
-                    let div = document.createElement("div");
-                    div.classList.add("flex", "items-center", "gap-2");
+                if (carrito.length === 0) {
+                    carritoListaModal.innerHTML =
+                        '<p class="text-center text-gray-500 p-4">Añade productos para actualizar.</p>';
+                } else {
+                    carrito.forEach((producto, index) => {
+                        let caracteristicasHtml = '';
+                        if (producto.caracteristicas && producto.caracteristicas.length > 0) {
+                            const tags = producto.caracteristicas.map(c =>
+                                `<span class="text-xs bg-gray-200 text-gray-600 px-2 py-1 rounded-full">${c}</span>`
+                            ).join(' ');
+                            caracteristicasHtml = `<div class="mt-1.5 flex flex-wrap gap-1.5">${tags}</div>`;
+                        }
 
-                    div.innerHTML = `
-                                <div style="width: 6rem; height: 6rem; overflow: hidden; border-radius: 0.5rem;">
-                                    ${producto.imagen 
-                                        ? `<img src="${producto.imagen}" alt="${producto.nombre}" style="width: 100%; height: 100%; object-fit: cover;">` 
-                                        : `<div class="w-full h-full bg-gray-300 flex items-center justify-center text-gray-500"><span>Sin Imagen</span></div>`}
+                        const div = document.createElement("div");
+                        div.className = "bg-white p-3 rounded-lg shadow-sm w-full";
+                        div.innerHTML = `
+                        <div class="flex items-center bg-white p-1 rounded-lg shadow-sm w-full gap-3">
+                            <div class="flex h-full items-center">
+                                <div class="w-16 h-16 flex-shrink-0 overflow-hidden rounded-md border border-gray-200">
+                                    <img src="${producto.imagen || 'https://via.placeholder.com/150'}" alt="${producto.nombre}" class="w-full h-full object-cover">
                                 </div>
-                                <div>
-                                    <strong>${producto.nombre}</strong> S/${producto.precio.toFixed(2)}
+                            </div>
+                            <div class="flex-grow">
+                                <div class="flex items-start bg-white p-1 rounded-lg shadow-sm w-full gap-3 justify-between">
+                                    <div>
+                                        <p class="font-bold text-gray-800 text-xs">${producto.nombre}</p>
+                                        <p class="text-sm text-gray-500">S/${producto.precio.toFixed(2)}</p>
+                                    </div>
+                                    <div class="flex flex-col justify-between h-full">
+                                        <div class="flex items-center gap-2">
+                                            <button onclick="cambiarCantidad(${index}, -1)" class="w-6 h-6 bg-gray-200 text-gray-600 rounded-full font-bold flex items-center justify-center transition hover:bg-gray-300">-</button>
+                                            <span class="font-bold text-lg">${producto.cantidad}</span>
+                                            <button onclick="cambiarCantidad(${index}, 1)" class="w-6 h-6 bg-gray-200 text-gray-600 rounded-full font-bold flex items-center justify-center transition hover:bg-gray-300">+</button>
+                                        </div>
+                                        <button onclick="eliminarDelCarrito(${index})" class="text-xs text-red-500 hover:text-red-700 transition mt-2">Quitar</button>
+                                    </div>
                                 </div>
-                                <button onclick="cambiarCantidad(${index}, -1)">➖</button>
-                                <span>${producto.cantidad}</span>
-                                <button onclick="cambiarCantidad(${index}, 1)">➕</button>
-                                <button onclick="eliminarDelCarrito(${index})">❌</button>
-                            `;
+                                ${caracteristicasHtml}
+                            </div>
+                        </div>`;
+                        carritoListaModal.appendChild(div);
+                        total += producto.precio * producto.cantidad;
+                    });
+                }
 
-                    carritoListaModal.appendChild(div);
-                    total += producto.precio * producto.cantidad;
-                });
-
-                // 🔄 Actualizar totales en el modal
+                // Update totals in the modal
                 totalPedidoModal.innerText = total.toFixed(2);
-                totalDetallePagarModal.innerText = (total + totalDetalle).toFixed(2);
-                totalDetalleModal.innerText = totalDetalle.toFixed(2);
+                const grandTotal = total + totalDetalle;
+                totalDetallePagarModal.innerText = grandTotal.toFixed(2);
+                totalPagarBotonModal.innerText = grandTotal.toFixed(2);
             }
 
 
@@ -518,7 +780,8 @@
                 let carrito = JSON.parse(localStorage.getItem("carrito")) || []; // Recuperar el carrito desde localStorage
 
                 if (carrito.length === 0) {
-                    Swal.fire("Sin nuevos productos", "Debes agregar productos nuevos para actualizar el pedido.", "warning");
+                    Swal.fire("Sin nuevos productos", "Debes agregar productos nuevos para actualizar el pedido.",
+                        "warning");
                     return;
                 }
 
@@ -539,7 +802,6 @@
                     });
             }
         </script>
-
         <div id="my-modal" class="modal">
             <div>
                 <div>
@@ -556,33 +818,32 @@
 
                 <!-- Totales dentro del Modal -->
                 <div class="flex justify-between m-2">
-                    <p><strong>Subtotal: S/ <span class="text-blue-600" id="totalPedidoModal">0.00</span></strong></p>
-                    <p><strong>Total: S/ <span class="text-blue-600" id="totalDetallePagarModal">0.00</span></strong>
+                    <p><strong class="text-blue-600">Subtotal: S/ <span class="text-blue-600"
+                                id="totalPedidoModal">0.00</span></strong></p>
+                    <p><strong class="text-blue-600">Total: S/ <span class="text-blue-600"
+                                id="totalDetallePagarModal">0.00</span></strong>
                     </p>
                 </div>
-
-                <!-- Botón "Actualizar Pedido" -->
-                <button type="button" onclick="actualizarPedidoDesdeModal()"
-                    style="width: 100%; background: #0b7efa; color: white; padding: 10px; border: none; border-radius: 5px; font-size: 16px; cursor: pointer; margin-top: 10px;">
-                    🔄 Actualizar Pedido
-                </button>
-                {{-- {{ route('procesarPagoMesa.stripe', ['pedido' => $pedido->id]) }}" --}}
-                <!-- Botón "Pagar" -->
-                <form action="{{ route('pedidoMesa.pagar', $pedido->id) }}" method="POST">
-                    @csrf
-                    <button type="submit"
-                        style="width: 100%; padding: 10px; background: #135287; color: white; border: none; 
-                       border-radius: 5px; cursor: pointer; margin-top: 10px;">
-                        Pagar S/ <span id="totalDetalleModal">0.00</span>
+                <div class="flex items-center gap-2">
+                    <!-- Botón "Actualizar Pedido" -->
+                    <button type="button" onclick="actualizarPedidoDesdeModal()"
+                        class="flex-1 text-center py-2 px-2 text-sm bg-blue-600 text-white font-semibold rounded-md hover:bg-blue-700 transition-colors">Actualizar
                     </button>
+                    {{-- {{ route('procesarPagoMesa.stripe', ['pedido' => $pedido->id]) }}" --}}
+                    <!-- Botón "Pagar" -->
+                    <form action="{{ route('pedidoMesa.pagar', $pedido->id) }}" method="POST">
+                        @csrf
+                        <button type="submit"
+                            class="w-full text-center py-2 px-2 text-sm bg-green-600 text-white font-semibold rounded-md hover:bg-green-700 transition-colors">
+                            Pagar S/ <span id="totalDetalleModal">0.00</span>
+                        </button>
 
-                </form>
-
-                <!-- Botón "Cerrar Modal" -->
-                <button type="button" onclick="cerrarModal()"
-                    style="width: 100%; background: #d9534f; color: white; padding: 10px; border: none; border-radius: 5px; font-size: 16px; cursor: pointer; margin-top: 10px;">
-                    ❌ Cerrar
-                </button>
+                    </form>
+                    <!-- Botón "Cerrar Modal" -->
+                    <button type="button" onclick="cerrarModal()"
+                        class="flex-1 text-center py-2 px-2 text-sm bg-gray-200 text-gray-700 font-medium rounded-md hover:bg-gray-300 transition-colors">Cerrar
+                    </button>
+                </div>
             </div>
         </div>
 
@@ -615,9 +876,7 @@
         document.addEventListener("DOMContentLoaded", function() {
             const pedidoId = {{ $pedido->id }};
 
-            // Función que pide el HTML actualizado y lo pone en la vista
             function actualizarDetallesCliente() {
-                // ✅ Usa la ruta nombrada para evitar errores 404
                 fetch(`{{ route('pedido.detalles.cliente', ['pedido_id' => $pedido->id]) }}`)
                     .then(response => response.text())
                     .then(html => {

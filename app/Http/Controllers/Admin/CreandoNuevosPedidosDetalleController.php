@@ -11,7 +11,6 @@ use App\Models\Producto;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Ratchet\Client\Connector; // 👈 CAMBIA esta línea
-use React\EventLoop\Factory;
 
 class CreandoNuevosPedidosDetalleController extends Controller
 {

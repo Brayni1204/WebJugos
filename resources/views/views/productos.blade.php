@@ -93,20 +93,17 @@
                                                         </p>
                                                     @endif
 
-                                                    <!-- Botón de compra o detalles -->
+                                                    @php
+                                                        $imageUrl = $producto->image->isNotEmpty()
+                                                            ? asset('storage/' . $producto->image->first()->url)
+                                                            : '';
+                                                    @endphp
                                                     <div class="mt-auto flex justify-center">
-
-                                                        <form action="{{ route('pagecarrito.agregar') }}"
-                                                            method="POST">
-                                                            @csrf
-                                                            <input type="hidden" name="id"
-                                                                value="{{ $producto->id }}">
-                                                            <input type="hidden" name="cantidad" value="1">
-                                                            <button type="submit"
-                                                                class="bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-600 transition">
-                                                                Agregar
-                                                            </button>
-                                                        </form>
+                                                        <button type="button"
+                                                            onclick="mostrarOpcionesProducto({{ $producto->id }}, '{{ $producto->nombre_producto }}', {{ $producto->precios->precio_venta ?? 0 }}, '{{ $imageUrl }}')"
+                                                            class="bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-600 transition">
+                                                            Agregar
+                                                        </button>
                                                     </div>
                                                 </div>
                                             </div>
@@ -231,6 +228,29 @@
                 }
             </script>
             <style>
+                #opcionesProductoModal,
+                #opcionesProductoOverlay {
+                    transition: opacity 0.3s ease-in-out;
+                }
+
+                #opcionesProductoModal {
+                    top: 50%;
+                    left: 50%;
+                    transform: translate(-50%, -50%);
+                    transition: transform 0.3s ease-in-out, opacity 0.3s ease-in-out;
+                }
+
+                #opcionesProductoModal.hidden {
+                    transform: translate(-50%, -50%) scale(0.95);
+                    opacity: 0;
+                    pointer-events: none;
+                }
+
+                #opcionesProductoOverlay.hidden {
+                    opacity: 0;
+                    pointer-events: none;
+                }
+
                 .floating-btn-container {
                     position: fixed;
                     bottom: 30px;
@@ -311,4 +331,220 @@
             </style>
         </div>
     </div>
+    <!-- Modal para Opciones de Producto -->
+    <div id="opcionesProductoOverlay" onclick="cerrarOpcionesProductoModal()"
+        class="hidden fixed inset-0 bg-opacity-100 z-10"></div>
+
+    <div id="opcionesProductoModal"
+        class="hidden fixed w-11/12 max-w-md bg-white rounded-2xl shadow-xl z-50 p-6 max-h-[90vh] overflow-y-auto">
+        <h3 id="opcionesProductoNombre" class="text-2xl font-bold text-gray-800 mb-2 text-center"></h3>
+        <p class="text-center text-gray-500 mb-6">Puedes Agregar Sugerencias</p>
+
+        <div class="space-y-5 w-80">
+            <!-- Temperatura -->
+            <div>
+                <h4 class="font-semibold text-gray-700 mb-2">Temperatura</h4>
+                <div class="flex flex-wrap gap-2 grupo-temperatura">
+                    <label class="flex-1">
+                        <input type="checkbox" name="caracteristicas_modal[]" value="helado" class="hidden">
+                        <span
+                            class="block text-center p-2 rounded-lg border border-gray-200 bg-gray-50 cursor-pointer transition-all duration-200">Helado</span>
+                    </label>
+                    <label class="flex-1">
+                        <input type="checkbox" name="caracteristicas_modal[]" value="temperado" class="hidden">
+                        <span
+                            class="block text-center p-2 rounded-lg border border-gray-200 bg-gray-50 cursor-pointer transition-all duration-200">Temperado</span>
+                    </label>
+                    <label class="flex-1">
+                        <input type="checkbox" name="caracteristicas_modal[]" value="temperatura ambiente"
+                            class="hidden">
+                        <span
+                            class="block text-center p-2 rounded-lg border border-gray-200 bg-gray-50 cursor-pointer transition-all duration-200">Ambiente</span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Azúcar -->
+            <div>
+                <h4 class="font-semibold text-gray-700 mb-2">Nivel de Azúcar</h4>
+                <div class="flex flex-wrap gap-2 grupo-azucar">
+                    <label class="flex-1">
+                        <input type="checkbox" name="caracteristicas_modal[]" value="con azúcar" class="hidden">
+                        <span
+                            class="block text-center p-2 rounded-lg border border-gray-200 bg-gray-50 cursor-pointer transition-all duration-200">Normal</span>
+                    </label>
+                    <label class="flex-1">
+                        <input type="checkbox" name="caracteristicas_modal[]" value="bajo en azúcar" class="hidden">
+                        <span
+                            class="block text-center p-2 rounded-lg border border-gray-200 bg-gray-50 cursor-pointer transition-all duration-200">Bajo</span>
+                    </label>
+                    <label class="flex-1">
+                        <input type="checkbox" name="caracteristicas_modal[]" value="sin azúcar" class="hidden">
+                        <span
+                            class="block text-center p-2 rounded-lg border border-gray-200 bg-gray-50 cursor-pointer transition-all duration-200">Sin
+                            Azúcar</span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Observación -->
+            <div>
+                <textarea id="observacion" name="observacion" rows="2" placeholder="Observación adicional"
+                    class="w-full p-2 mt-1 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"></textarea>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-3 mt-6 pt-4 border-t">
+            <button type="button" onclick="cerrarOpcionesProductoModal()"
+                class="flex-1 text-center py-2 px-4 bg-gray-200 text-gray-700 font-medium rounded-md hover:bg-gray-300 transition-colors">Cancelar</button>
+            <button type="button" onclick="agregarAlCarritoDesdeModal()"
+                class="flex-1 text-center py-2 px-4 bg-blue-600 text-white font-semibold rounded-md hover:bg-blue-700 transition-colors shadow-md shadow-blue-500/30">Añadir</button>
+        </div>
+    </div>
+
+    <!-- Hidden form for adding to cart -->
+    <form id="addToCartForm" action="{{ route('pagecarrito.agregar') }}" method="POST" class="hidden">
+        @csrf
+        <input type="hidden" name="id" id="form_producto_id">
+        <input type="hidden" name="cantidad" id="form_producto_cantidad" value="1">
+        <div id="form_producto_caracteristicas"></div>
+    </form>
+
+    <script>
+        let productoParaAnadir = null;
+
+        function mostrarOpcionesProducto(id, nombre, precio, imagenUrl) {
+            productoParaAnadir = {
+                id,
+                nombre,
+                precio,
+                imagenUrl
+            };
+            document.getElementById('opcionesProductoNombre').innerText = nombre;
+
+            // Reset checkboxes and observation
+            document.querySelectorAll('#opcionesProductoModal input[type="checkbox"]').forEach(cb => {
+                cb.checked = false;
+                const span = cb.nextElementSibling;
+                span.classList.remove('bg-blue-600', 'text-white', 'border-blue-500', 'shadow-md');
+                span.classList.add('bg-gray-50', 'border-gray-200');
+            });
+            document.getElementById('observacion').value = '';
+
+            document.getElementById('opcionesProductoModal').classList.remove('hidden');
+            document.getElementById('opcionesProductoOverlay').classList.remove('hidden');
+        }
+
+        function cerrarOpcionesProductoModal() {
+            document.getElementById('opcionesProductoModal').classList.add('hidden');
+            document.getElementById('opcionesProductoOverlay').classList.add('hidden');
+            productoParaAnadir = null;
+        }
+
+        function agregarAlCarritoDesdeModal() {
+            if (!productoParaAnadir) return;
+
+            let caracteristicasSeleccionadas = Array.from(document.querySelectorAll(
+                    '#opcionesProductoModal input[name="caracteristicas_modal[]"]:checked'))
+                .map(cb => cb.value);
+
+            let observacion = document.getElementById('observacion').value.trim();
+            if (observacion) {
+                caracteristicasSeleccionadas.push(observacion);
+            }
+
+            document.getElementById('form_producto_id').value = productoParaAnadir.id;
+            const caracteristicasContainer = document.getElementById('form_producto_caracteristicas');
+            caracteristicasContainer.innerHTML = '';
+            caracteristicasSeleccionadas.forEach(caracteristica => {
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = 'caracteristicas[]';
+                input.value = caracteristica;
+                caracteristicasContainer.appendChild(input);
+            });
+
+            document.getElementById('addToCartForm').submit();
+        }
+
+        document.addEventListener("DOMContentLoaded", () => {
+
+            // Move modal to body to avoid stacking context issues
+
+            const modal = document.getElementById('opcionesProductoModal');
+
+            const overlay = document.getElementById('opcionesProductoOverlay');
+
+            if (modal) document.body.appendChild(modal);
+
+            if (overlay) document.body.appendChild(overlay);
+
+
+
+            document.querySelectorAll('.grupo-temperatura label, .grupo-azucar label').forEach(label => {
+
+                const checkbox = label.querySelector('input[type="checkbox"]');
+
+                const span = label.querySelector('span');
+
+
+
+                const updateGroupStyle = (groupClass) => {
+
+                    document.querySelectorAll(`.${groupClass} label`).forEach(l => {
+
+                        const cb = l.querySelector('input[type="checkbox"]');
+
+                        const sp = l.querySelector('span');
+
+                        if (cb.checked) {
+
+                            sp.classList.add('bg-blue-600', 'text-white', 'border-blue-500',
+                                'shadow-md');
+
+                            sp.classList.remove('bg-gray-50', 'border-gray-200');
+
+                        } else {
+
+                            sp.classList.remove('bg-blue-600', 'text-white', 'border-blue-500',
+                                'shadow-md');
+
+                            sp.classList.add('bg-gray-50', 'border-gray-200');
+
+                        }
+
+                    });
+
+                };
+
+
+
+                checkbox.addEventListener('change', () => {
+
+                    const group = label.parentElement.classList.contains('grupo-temperatura') ?
+                        'grupo-temperatura' : 'grupo-azucar';
+
+                    if (checkbox.checked) {
+
+                        document.querySelectorAll(`.${group} input[type="checkbox"]`).forEach(
+                            otherCheckbox => {
+
+                                if (otherCheckbox !== checkbox) {
+
+                                    otherCheckbox.checked = false;
+
+                                }
+
+                            });
+
+                    }
+
+                    updateGroupStyle(group);
+
+                });
+
+            });
+
+        });
+    </script>
 </x-app-layout>

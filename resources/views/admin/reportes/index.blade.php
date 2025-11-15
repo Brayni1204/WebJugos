@@ -1,87 +1,215 @@
 @extends('adminlte::page')
 
-@section('title', 'Reporte de Ventas')
+@section('title', 'Dashboard de Reportes')
 
 @section('content_header')
-    <h1 class="text-center">📊 Reporte de Ventas</h1>
+@stop
+
+@section('css')
+    {{-- DataTables CSS --}}
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap4.min.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/responsive/2.5.0/css/responsive.bootstrap4.min.css">
+    {{-- Daterange Picker CSS --}}
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css" />
+    <style>
+        /* Custom Dashboard Styles */
+        .custom-box {
+            border-radius: .5rem;
+            box-shadow: 0 0 1px rgba(0, 0, 0, .125), 0 1px 3px rgba(0, 0, 0, .2);
+            transition: all .3s ease-in-out;
+            color: #fff;
+        }
+
+        .custom-box:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, .2);
+        }
+
+        .custom-box .inner h3 {
+            font-weight: 600;
+            font-size: 2rem;
+        }
+
+        .custom-box .inner p {
+            font-size: 0.9rem;
+        }
+
+        .custom-box .icon {
+            transition: all .3s ease-in-out;
+        }
+
+        .custom-box:hover .icon {
+            transform: scale(1.1);
+        }
+
+        .custom-box-1 {
+            background-color: #4f46e5;
+        }
+
+        /* Indigo-600 */
+        .custom-box-2 {
+            background-color: #0d9488;
+        }
+
+        /* Teal-600 */
+        .custom-box-3 {
+            background-color: #d97706;
+        }
+
+        /* Amber-600 */
+
+        .card-tabs .nav-link.active {
+            background-color: #eef2ff;
+            /* Indigo-100 */
+            border-color: #c7d2fe;
+            /* Indigo-200 */
+            color: #3730a3;
+            /* Indigo-800 */
+            font-weight: 600;
+        }
+
+        .small-box .icon-text {
+            font-size: 60px;
+            font-weight: bold;
+            color: rgba(0, 0, 0, 0.15);
+        }
+
+        .small-box h3 {
+            font-size: 2.2rem;
+        }
+    </style>
 @stop
 
 @section('content')
-    <div class="container mt-4">
-        <h2 class="mb-4">📊 Generar Reportes de Ventas</h2>
-
-        <div class="card card-primary">
-            <div class="card-header">
-                <h3 class="card-title">Opciones de Reporte</h3>
-            </div>
-            <div class="card-body">
-                <div class="form-group">
-                    <label for="tipoReporte" class="form-label"><strong>Seleccionar tipo de reporte:</strong></label>
-                    <select id="tipoReporte" class="form-control">
-                        <option value="diario">📅 Diario</option>
-                        <option value="semanal">📆 Semanal</option>
-                        <option value="mensual">📊 Mensual</option>
-                        <option value="rango">📌 Rango de Fechas</option>
-                    </select>
-                </div>
-
-                <div id="filtros">
-                    <div id="filtroDiario" class="form-group">
-                        <label for="fechaDiaria" class="form-label">Selecciona una fecha:</label>
-                        <input type="date" id="fechaDiaria" class="form-control">
+    {{-- Fila de Filtros --}}
+    <div class="card card-primary mt-1">
+        <div class="card-header ">
+            <h3 class="card-title">Reportes</h3>
+        </div>
+        <div class="card-body">
+            <div class="form-group">
+                <label for="daterange" class="form-label"><strong>Seleccionar Rango de Fechas:</strong></label>
+                <div class="input-group">
+                    <div class="input-group-prepend">
+                        <span class="input-group-text"><i class="far fa-calendar-alt"></i></span>
                     </div>
-
-                    <div id="filtroSemanal" class="form-group d-none">
-                        <label for="inicioSemana" class="form-label">Selecciona el inicio de la semana:</label>
-                        <input type="date" id="inicioSemana" class="form-control">
-                    </div>
-
-                    <div id="filtroMensual" class="form-group d-none">
-                        <label for="mes" class="form-label">Selecciona un mes:</label>
-                        <input type="month" id="mes" class="form-control">
-                    </div>
-
-                    <div id="filtroRango" class="row d-none">
-                        <div class="col-md-6 form-group">
-                            <label for="fechaInicio" class="form-label">Fecha Inicio:</label>
-                            <input type="date" id="fechaInicio" class="form-control">
-                        </div>
-                        <div class="col-md-6 form-group">
-                            <label for="fechaFin" class="form-label">Fecha Fin:</label>
-                            <input type="date" id="fechaFin" class="form-control">
-                        </div>
-                    </div>
+                    <input type="text" id="daterange" class="form-control" />
                 </div>
             </div>
-            <div class="card-footer text-center">
-                <button id="btnGenerar" class="btn btn-primary btn-lg">🔍 Generar Reporte</button>
+        </div>
+    </div>
+
+    {{-- Fila de Resumen (Small Boxes) --}}
+    <div class="row">
+        <div class="col-lg-4 col-6">
+            <div class="small-box custom-box custom-box-1">
+                <div class="inner">
+                    <h3 id="totalVentas">S/ 0.00</h3>
+                    <p>Total de Ventas</p>
+                </div>
+                <div class="icon">
+                    <i class="fas fa-cash-register"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4 col-6">
+            <div class="small-box custom-box custom-box-2">
+                <div class="inner">
+                    <h3 id="cantidadPedidos">0</h3>
+                    <p>Cantidad de Pedidos</p>
+                </div>
+                <div class="icon">
+                    <i class="fas fa-receipt"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4 col-12">
+            <div class="small-box custom-box custom-box-3">
+                <div class="inner">
+                    <h3 id="productoEstrella"
+                        style="font-size: 1.8rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">N/A</h3>
+                    <p>Producto Estrella</p>
+                </div>
+                <div class="icon">
+                    <i class="fas fa-trophy"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- Fila de Contenido Principal --}}
+    <div class="row">
+        {{-- Columna Izquierda (Tablas) --}}
+        <div class="col-lg-8">
+            <div class="card card-tabs">
+                <div class="card-header p-0 pt-1">
+                    <ul class="nav nav-tabs" id="custom-tabs-one-tab" role="tablist">
+                        <li class="nav-item">
+                            <a class="nav-link active" id="tab-productos-link" data-toggle="pill" href="#tab-productos"
+                                role="tab" aria-controls="tab-productos" aria-selected="true">Productos Más
+                                Vendidos</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" id="tab-clientes-link" data-toggle="pill" href="#tab-clientes"
+                                role="tab" aria-controls="tab-clientes" aria-selected="false">Clientes Frecuentes</a>
+                        </li>
+                    </ul>
+                </div>
+                <div class="card-body">
+                    <div class="tab-content" id="custom-tabs-four-tabContent">
+                        {{-- Tab de Productos --}}
+                        <div class="tab-pane fade show active" id="tab-productos" role="tabpanel"
+                            aria-labelledby="tab-productos-link">
+                            <div class="d-flex justify-content-end mb-3">
+                                <a id="exportProductosExcel" href="#" class="btn btn-success btn-sm mr-2"><i class="fas fa-file-excel"></i> Excel</a>
+                                <a id="exportProductosPdf" href="#" class="btn btn-danger btn-sm"><i class="fas fa-file-pdf"></i> PDF</a>
+                            </div>
+                            <table id="tablaProductos" class="table table-bordered table-striped dt-responsive nowrap"
+                                style="width:100%">
+                                <thead>
+                                    <tr>
+                                        <th>Producto</th>
+                                        <th>Total Vendido</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                        {{-- Tab de Clientes --}}
+                        <div class="tab-pane fade" id="tab-clientes" role="tabpanel" aria-labelledby="tab-clientes-link">
+                            <div class="d-flex justify-content-end mb-3">
+                                <a id="exportClientesExcel" href="#" class="btn btn-success btn-sm mr-2"><i class="fas fa-file-excel"></i> Excel</a>
+                                <a id="exportClientesPdf" href="#" class="btn btn-danger btn-sm"><i class="fas fa-file-pdf"></i> PDF</a>
+                            </div>
+                            <table id="tablaClientes" class="table table-bordered table-striped dt-responsive nowrap"
+                                style="width:100%">
+                                <thead>
+                                    <tr>
+                                        <th>Nombre</th>
+                                        <th>Compras Realizadas</th>
+                                        <th>Total Gastado</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
-
-        <div id="resultado" class="mt-5 d-none">
-            <div class="card card-success">
+        {{-- Columna Derecha (Gráfico) --}}
+        <div class="col-lg-4">
+            <div class="card card-outline">
                 <div class="card-header">
-                    <h3 class="card-title">📌 Resultados del Reporte</h3>
+                    <h3 class="card-title">Método de Pago</h3>
+                    <div class="card-tools">
+                        <a id="exportMetodosExcel" href="#" class="btn btn-success btn-sm mr-2"><i class="fas fa-file-excel"></i></a>
+                        <a id="exportMetodosPdf" href="#" class="btn btn-danger btn-sm"><i class="fas fa-file-pdf"></i></a>
+                    </div>
                 </div>
                 <div class="card-body">
-                    <ul class="list-group list-group-flush">
-                        <li class="list-group-item">
-                            <strong>Total de Ventas:</strong> <span id="totalVentas"
-                                class="float-right font-weight-bold"></span>
-                        </li>
-                        <li class="list-group-item" id="dailySalesAmount" style="display: none;">
-                            <strong>Monto Vendido del Día:</strong> <span id="montoDiario"
-                                class="float-right text-success font-weight-bold"></span>
-                        </li>
-                        <li class="list-group-item">
-                            <strong>Producto más Vendido:</strong> <span id="productoMasVendido" class="float-right"></span>
-                        </li>
-                        <li class="list-group-item">
-                            <strong>Clientes Frecuentes:</strong>
-                            <ul id="clientesFrecuentes" class="list-group list-group-flush mt-2"></ul>
-                        </li>
-                    </ul>
+                    <canvas id="metodosPagoChart"></canvas>
                 </div>
             </div>
         </div>
@@ -89,125 +217,161 @@
 @stop
 
 @section('js')
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script> {{-- Agregado para alertas más elegantes --}}
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    {{-- jQuery, Moment.js, Daterange Picker --}}
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/momentjs/latest/moment.min.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
+
+    {{-- Chart.js --}}
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    {{-- DataTables --}}
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap4.min.js"></script>
+    <script src="https://cdn.datatables.net/responsive/2.5.0/js/dataTables.responsive.min.js"></script>
+    <script src="https://cdn.datatables.net/responsive/2.5.0/js/responsive.bootstrap4.min.js"></script>
+
     <script>
-        document.addEventListener("DOMContentLoaded", function() {
-            const tipoReporte = document.getElementById("tipoReporte");
-            const filtros = {
-                diario: document.getElementById("filtroDiario"),
-                semanal: document.getElementById("filtroSemanal"),
-                mensual: document.getElementById("filtroMensual"),
-                rango: document.getElementById("filtroRango"),
-            };
-            const resultadoDiv = document.getElementById("resultado");
-            const totalVentasSpan = document.getElementById("totalVentas");
-            const productoMasVendidoSpan = document.getElementById("productoMasVendido");
-            const clientesFrecuentesUl = document.getElementById("clientesFrecuentes");
-            const dailySalesAmountLi = document.getElementById("dailySalesAmount");
-            const montoDiarioSpan = document.getElementById("montoDiario");
+        $(document).ready(function() {
+            let metodosPagoChart;
 
-
-            // 🔹 Ocultar y mostrar filtros dinámicamente
-            tipoReporte.addEventListener("change", function() {
-                Object.values(filtros).forEach(filtro => filtro.classList.add("d-none"));
-                filtros[this.value].classList.remove("d-none");
-                resultadoDiv.classList.add("d-none"); // Ocultar resultados al cambiar el tipo de reporte
-                dailySalesAmountLi.style.display = 'none'; // Ocultar monto diario por defecto
+            // Inicializar DataTables (vacías por ahora)
+            const tablaProductos = $('#tablaProductos').DataTable({
+                responsive: true,
+                columns: [{
+                        data: 'nombre_producto'
+                    },
+                    {
+                        data: 'total_vendido'
+                    }
+                ],
+                order: [
+                    [1, 'desc']
+                ]
             });
 
-            // Establecer la fecha actual por defecto para el reporte diario
-            const today = new Date();
-            const year = today.getFullYear();
-            const month = String(today.getMonth() + 1).padStart(2, '0'); // Meses son 0-index
-            const day = String(today.getDate()).padStart(2, '0');
-            document.getElementById("fechaDiaria").value = `${year}-${month}-${day}`;
-
-            document.getElementById("btnGenerar").addEventListener("click", function() {
-                const tipo = tipoReporte.value;
-                let url = `/admin/reportes/${tipo}`;
-                let params = {};
-
-                if (tipo === "diario") {
-                    params.fecha = document.getElementById("fechaDiaria").value;
-                    if (!params.fecha) {
-                        Swal.fire('Error', 'Por favor, selecciona una fecha para el reporte diario.',
-                            'error');
-                        return;
-                    }
-                } else if (tipo === "semanal") {
-                    params.inicio_semana = document.getElementById("inicioSemana").value;
-                    if (!params.inicio_semana) {
-                        Swal.fire('Error', 'Por favor, selecciona la fecha de inicio de la semana.',
-                            'error');
-                        return;
-                    }
-                } else if (tipo === "mensual") {
-                    const mesAnio = document.getElementById("mes").value.split("-");
-                    if (mesAnio.length !== 2) {
-                        Swal.fire('Error', 'Por favor, selecciona un mes y año válidos.', 'error');
-                        return;
-                    }
-                    params.mes = mesAnio[1];
-                    params.anio = mesAnio[0];
-                } else if (tipo === "rango") {
-                    params.fecha_inicio = document.getElementById("fechaInicio").value;
-                    params.fecha_fin = document.getElementById("fechaFin").value;
-                    if (!params.fecha_inicio || !params.fecha_fin) {
-                        Swal.fire('Error', 'Por favor, selecciona ambas fechas para el rango.', 'error');
-                        return;
-                    }
-                    if (new Date(params.fecha_inicio) > new Date(params.fecha_fin)) {
-                        Swal.fire('Error', 'La fecha de inicio no puede ser posterior a la fecha de fin.',
-                            'error');
-                        return;
-                    }
-                }
-
-                fetch(url + "?" + new URLSearchParams(params))
-                    .then(response => {
-                        if (!response.ok) {
-                            throw new Error('Network response was not ok ' + response.statusText);
+            const tablaClientes = $('#tablaClientes').DataTable({
+                responsive: true,
+                columns: [{
+                        data: 'nombre',
+                        render: function(data, type, row) {
+                            return `${row.nombre || ''}`;
                         }
+                    },
+                    {
+                        data: 'compras_realizadas'
+                    },
+                    {
+                        data: 'total_gastado',
+                        render: function(data) {
+                            return `S/ ${parseFloat(data || 0).toFixed(2)}`;
+                        }
+                    }
+                ],
+                order: [
+                    [2, 'desc']
+                ]
+            });
+
+            // Inicializar Daterangepicker
+            const daterangeInput = $('#daterange');
+            daterangeInput.daterangepicker({
+                startDate: moment().startOf('month'),
+                endDate: moment().endOf('month'),
+                ranges: {
+                    'Hoy': [moment(), moment()],
+                    'Ayer': [moment().subtract(1, 'days'), moment().subtract(1, 'days')],
+                    'Últimos 7 Días': [moment().subtract(6, 'days'), moment()],
+                    'Últimos 30 Días': [moment().subtract(29, 'days'), moment()],
+                    'Este Mes': [moment().startOf('month'), moment().endOf('month')],
+                    'Mes Pasado': [moment().subtract(1, 'month').startOf('month'), moment().subtract(1,
+                        'month').endOf('month')]
+                },
+                locale: {
+                    format: 'YYYY-MM-DD',
+                    cancelLabel: 'Limpiar',
+                    applyLabel: 'Aplicar',
+                    fromLabel: 'Desde',
+                    toLabel: 'Hasta',
+                    customRangeLabel: 'Rango Personalizado',
+                }
+            });
+
+            // Función para actualizar el dashboard
+            function updateDashboard(startDate, endDate) {
+                const url = `{{ route('admin.reportes.general') }}?fecha_inicio=${startDate}&fecha_fin=${endDate}`;
+
+                // Mostrar overlay de carga
+                $('body').append('<div class="overlay"><i class="fas fa-2x fa-sync-alt fa-spin"></i></div>');
+
+                fetch(url)
+                    .then(response => {
+                        if (!response.ok) throw new Error('Error en la respuesta del servidor');
                         return response.json();
                     })
-                    .then(data => mostrarResultados(data, tipo))
+                    .then(data => {
+                        // 1. Actualizar Summary Boxes
+                        $('#totalVentas').text(`S/ ${parseFloat(data.summary.total_ventas || 0).toFixed(2)}`);
+                        $('#cantidadPedidos').text(data.summary.cantidad_pedidos || 0);
+                        $('#productoEstrella').text(data.summary.producto_estrella || 'N/A');
+
+                        // 2. Actualizar DataTable de Productos
+                        tablaProductos.clear().rows.add(data.productos_mas_vendidos || []).draw();
+
+                        // 3. Actualizar DataTable de Clientes
+                        tablaClientes.clear().rows.add(data.clientes_frecuentes || []).draw();
+
+                        // 4. Actualizar Gráfico de Métodos de Pago
+                        const chartData = {
+                            labels: data.ventas_por_metodo_pago.map(item => item.metodo_pago),
+                            datasets: [{
+                                data: data.ventas_por_metodo_pago.map(item => item.total),
+                                backgroundColor: ['#4f46e5', '#0d9488', '#d97706', '#64748b',
+                                    '#db2777'
+                                ], // Indigo, Teal, Amber, Slate, Pink
+                            }]
+                        };
+                        if (metodosPagoChart) {
+                            metodosPagoChart.data = chartData;
+                            metodosPagoChart.update();
+                        } else {
+                            metodosPagoChart = new Chart(document.getElementById('metodosPagoChart'), {
+                                type: 'pie',
+                                data: chartData,
+                                options: {
+                                    responsive: true,
+                                    maintainAspectRatio: false,
+                                }
+                            });
+                        }
+
+                        // 5. Actualizar enlaces de exportación
+                        const exportParams = `fecha_inicio=${startDate}&fecha_fin=${endDate}`;
+                        $('#exportProductosExcel').attr('href', `{{ route('admin.reportes.export.productos', 'xlsx') }}?${exportParams}`);
+                        $('#exportProductosPdf').attr('href', `{{ route('admin.reportes.export.productos', 'pdf') }}?${exportParams}`);
+                        $('#exportClientesExcel').attr('href', `{{ route('admin.reportes.export.clientes', 'xlsx') }}?${exportParams}`);
+                        $('#exportClientesPdf').attr('href', `{{ route('admin.reportes.export.clientes', 'pdf') }}?${exportParams}`);
+                        $('#exportMetodosExcel').attr('href', `{{ route('admin.reportes.export.metodosPago', 'xlsx') }}?${exportParams}`);
+                        $('#exportMetodosPdf').attr('href', `{{ route('admin.reportes.export.metodosPago', 'pdf') }}?${exportParams}`);
+                    })
                     .catch(error => {
-                        console.error("Error en el reporte:", error);
-                        Swal.fire('Error',
-                            'Hubo un problema al generar el reporte. Inténtalo de nuevo.', 'error');
+                        console.error("Error al actualizar el dashboard:", error);
+                        Swal.fire('Error', 'No se pudo cargar la información del dashboard.', 'error');
+                    })
+                    .finally(() => {
+                        // Remover overlay de carga
+                        $('.overlay').remove();
                     });
-            });
-
-            function mostrarResultados(data, tipo) {
-                resultadoDiv.classList.remove("d-none");
-
-                totalVentasSpan.textContent = `$${parseFloat(data.total_ventas || 0).toFixed(2)}`;
-                productoMasVendidoSpan.textContent = data.producto_mas_vendido || 'N/A';
-
-                // Mostrar monto vendido por día solo en el reporte diario
-                if (tipo === "diario") {
-                    dailySalesAmountLi.style.display = 'block';
-                    montoDiarioSpan.textContent = `$${parseFloat(data.total_ventas || 0).toFixed(2)}`;
-                } else {
-                    dailySalesAmountLi.style.display = 'none';
-                }
-
-                let clientesHTML = "";
-                if (Array.isArray(data.clientes_frecuentes) && data.clientes_frecuentes.length > 0) {
-                    data.clientes_frecuentes.forEach(cliente => {
-                        clientesHTML += `<li class="list-group-item d-flex justify-content-between align-items-center">
-                                            ${cliente.nombre}
-                                            <span class="badge badge-primary badge-pill">${cliente.total_compras} compras</span>
-                                         </li>`;
-                    });
-                } else {
-                    clientesHTML = `<li class="list-group-item">No hay clientes frecuentes para este período.</li>`;
-                }
-                clientesFrecuentesUl.innerHTML = clientesHTML;
             }
 
-            // Inicializar la vista de filtros al cargar la página
-            tipoReporte.dispatchEvent(new Event('change'));
+            // Evento al cambiar el rango de fechas
+            daterangeInput.on('apply.daterangepicker', function(ev, picker) {
+                updateDashboard(picker.startDate.format('YYYY-MM-DD'), picker.endDate.format('YYYY-MM-DD'));
+            });
+
+            // Carga inicial de datos
+            updateDashboard(daterangeInput.data('daterangepicker').startDate.format('YYYY-MM-DD'), daterangeInput
+                .data('daterangepicker').endDate.format('YYYY-MM-DD'));
         });
     </script>
 @stop

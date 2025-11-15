@@ -67,7 +67,14 @@
                                                 $subtotal += ($item->price ?? 0) * $item->qty;
                                             @endphp
                                             <tr class="border border-gray-200">
-                                                <td class="p-2">{{ $item->name }}</td>
+                                                <td class="p-2">
+                                                    {{ $item->name }}
+                                                    @if (isset($item->options['caracteristicas']) && !empty($item->options['caracteristicas']))
+                                                        <div class="text-xs text-gray-500">
+                                                            ({{ implode(', ', $item->options['caracteristicas']) }})
+                                                        </div>
+                                                    @endif
+                                                </td>
                                                 <td>
                                                     <div class="btn-group btn-group-sm flex justify-center gap-4 text-xl"
                                                         role="group" aria-label="Small button group">
@@ -102,7 +109,7 @@
                                                         </div>
                                                     </form>
                                                 </td>
-                                            </tr> 
+                                            </tr>
                                         @endforeach
                                     </tbody>
                                 </table>
@@ -133,24 +140,29 @@
                                 <form id="pedidoForm" method="POST" action="{{ route('pedido.realizar') }}">
                                     @csrf
 
-                                    <div>
-                                        <!-- Datos ocultos de los productos -->
-                                        @foreach ($items as $item)
-                                            <input type="hidden" name="productos[{{ $loop->index }}][nombre]"
-                                                value="{{ $item->name }}">
-                                            <input type="hidden" name="productos[{{ $loop->index }}][cantidad]"
-                                                value="{{ $item->qty }}">
-                                            <input type="hidden" name="productos[{{ $loop->index }}][precio]"
-                                                value="{{ $item->price }}">
-                                        @endforeach
-
-                                        <input type="hidden" name="subtotal" value="{{ $subtotal }}">
-                                        <input type="hidden" name="costo_delivery" id="costo_delivery_input"
-                                            value="0">
-                                        <input type="hidden" name="total_pago" id="total_pago_input"
-                                            value="{{ $subtotal }}">
-                                    </div>
-
+                                                                         <div>
+                                                                            <!-- Datos ocultos de los productos -->
+                                                                                                                    @foreach ($items as $item)
+                                                                                                                        <input type="hidden" name="productos[{{ $loop->index }}][nombre]"
+                                                                                                                            value="{{ $item->name }}">
+                                                                                                                        <input type="hidden" name="productos[{{ $loop->index }}][cantidad]"
+                                                                                                                            value="{{ $item->qty }}">
+                                                                                                                        <input type="hidden" name="productos[{{ $loop->index }}][precio]"
+                                                                                                                            value="{{ $item->price }}">
+                                                                                                                        @if (isset($item->options['caracteristicas']))
+                                                                                                                            @foreach ($item->options['caracteristicas'] as $caracteristica)
+                                                                                                                                <input type="hidden"
+                                                                                                                                    name="productos[{{ $loop->index }}][caracteristicas][]"
+                                                                                                                                    value="{{ $caracteristica }}">
+                                                                                                                            @endforeach
+                                                                                                                        @endif
+                                                                                                                    @endforeach                                    
+                                                                            <input type="hidden" name="subtotal" value="{{ $subtotal }}">
+                                                                            <input type="hidden" name="costo_delivery" id="costo_delivery_input"
+                                                                                value="0">
+                                                                            <input type="hidden" name="total_pago" id="total_pago_input"
+                                                                                value="{{ $subtotal }}">
+                                                                        </div>
                                     <!-- Datos del Cliente -->
                                     <div class="mt-6 p-4 bg-white shadow-md rounded-lg">
                                         <h2 class="text-lg font-bold text-gray-800">Información del Cliente</h2>
