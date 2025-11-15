@@ -21,7 +21,6 @@
         }
 
         .custom-box:hover {
-            transform: translateY(-3px);
             box-shadow: 0 4px 8px rgba(0, 0, 0, .2);
         }
 
@@ -34,12 +33,8 @@
             font-size: 0.9rem;
         }
 
-        .custom-box .icon {
-            transition: all .3s ease-in-out;
-        }
-
         .custom-box:hover .icon {
-            transform: scale(1.1);
+            /* transform: scale(1.1); */
         }
 
         .custom-box-1 {
@@ -54,6 +49,10 @@
         /* Teal-600 */
         .custom-box-3 {
             background-color: #d97706;
+        }
+        
+        .custom-box-4 {
+            background-color: #10b981; /* Emerald-500 */
         }
 
         /* Amber-600 */
@@ -101,29 +100,40 @@
 
     {{-- Fila de Resumen (Small Boxes) --}}
     <div class="row">
-        <div class="col-lg-4 col-6">
+        <div class="col-lg-3 col-6">
             <div class="small-box custom-box custom-box-1">
                 <div class="inner">
                     <h3 id="totalVentas">S/ 0.00</h3>
-                    <p>Total de Ventas</p>
+                    <p>Ventas</p>
                 </div>
                 <div class="icon">
                     <i class="fas fa-cash-register"></i>
                 </div>
             </div>
         </div>
-        <div class="col-lg-4 col-6">
+        <div class="col-lg-3 col-6">
+            <div class="small-box custom-box custom-box-4">
+                <div class="inner">
+                    <h3 id="ventasDelDia">S/ 0.00</h3>
+                    <p>Ventas del Día</p>
+                </div>
+                <div class="icon">
+                    <i class="fas fa-calendar-day"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-6">
             <div class="small-box custom-box custom-box-2">
                 <div class="inner">
                     <h3 id="cantidadPedidos">0</h3>
-                    <p>Cantidad de Pedidos</p>
+                    <p>Pedidos</p>
                 </div>
                 <div class="icon">
                     <i class="fas fa-receipt"></i>
                 </div>
             </div>
         </div>
-        <div class="col-lg-4 col-12">
+        <div class="col-lg-3 col-6">
             <div class="small-box custom-box custom-box-3">
                 <div class="inner">
                     <h3 id="productoEstrella"
@@ -238,6 +248,10 @@
             // Inicializar DataTables (vacías por ahora)
             const tablaProductos = $('#tablaProductos').DataTable({
                 responsive: true,
+                dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>>' +
+                     '<"row"<"col-sm-12"tr>>' +
+                     '<"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
+                lengthMenu: [ [10, 15, 50, -1], ['10', '15', '50', 'Todos'] ],
                 columns: [{
                         data: 'nombre_producto'
                     },
@@ -247,11 +261,18 @@
                 ],
                 order: [
                     [1, 'desc']
-                ]
+                ],
+                language: {
+                    url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json',
+                }
             });
 
             const tablaClientes = $('#tablaClientes').DataTable({
                 responsive: true,
+                dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>>' +
+                     '<"row"<"col-sm-12"tr>>' +
+                     '<"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
+                lengthMenu: [ [10, 15, 50, -1], ['10', '15', '50', 'Todos'] ],
                 columns: [{
                         data: 'nombre',
                         render: function(data, type, row) {
@@ -270,7 +291,10 @@
                 ],
                 order: [
                     [2, 'desc']
-                ]
+                ],
+                language: {
+                    url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json',
+                }
             });
 
             // Inicializar Daterangepicker
@@ -364,6 +388,21 @@
                     });
             }
 
+            // Función para obtener las ventas del día
+            function updateVentasDelDia() {
+                const url = `{{ route('admin.reportes.ventasPorDia') }}`;
+                fetch(url)
+                    .then(response => response.json())
+                    
+                    .then(data => {
+                        $('#ventasDelDia').text(`S/ ${parseFloat(data.total_ventas || 0).toFixed(2)}`);
+                    })
+                    .catch(error => {
+                        console.error("Error al obtener ventas del día:", error);
+                        $('#ventasDelDia').text('Error');
+                    });
+            }
+
             // Evento al cambiar el rango de fechas
             daterangeInput.on('apply.daterangepicker', function(ev, picker) {
                 updateDashboard(picker.startDate.format('YYYY-MM-DD'), picker.endDate.format('YYYY-MM-DD'));
@@ -372,6 +411,8 @@
             // Carga inicial de datos
             updateDashboard(daterangeInput.data('daterangepicker').startDate.format('YYYY-MM-DD'), daterangeInput
                 .data('daterangepicker').endDate.format('YYYY-MM-DD'));
+            
+            updateVentasDelDia();
         });
     </script>
 @stop
