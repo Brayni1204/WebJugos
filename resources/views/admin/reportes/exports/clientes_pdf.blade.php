@@ -1,34 +1,28 @@
 <!DOCTYPE html>
 <html>
-
 <head>
     <title>Reporte de Clientes Frecuentes</title>
     <style>
         body {
             font-family: sans-serif;
         }
-
         table {
             width: 100%;
             border-collapse: collapse;
         }
-
         th,
         td {
             border: 1px solid #ddd;
             padding: 8px;
             text-align: left;
         }
-
         th {
             background-color: #f2f2f2;
         }
-
         .header {
             text-align: center;
             margin-bottom: 20px;
         }
-
         .footer {
             text-align: center;
             margin-top: 20px;
