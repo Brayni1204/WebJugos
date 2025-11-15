@@ -59,7 +59,6 @@
             @endforeach
         </tbody>
     </table>
-
     <div class="footer">
         Generado el {{ date('Y-m-d H:i:s') }}
     </div>
