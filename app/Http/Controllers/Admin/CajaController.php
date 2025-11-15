@@ -11,6 +11,8 @@ use App\Models\Venta;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Maatwebsite\Excel\Facades\Excel; // Added for Excel exports
+use Barryvdh\DomPDF\Facade\Pdf; // Added for PDF exports
 
 class CajaController extends Controller
 {
@@ -279,6 +281,191 @@ class CajaController extends Controller
                 'error' => 'Error en reporteVentas: ' . $e->getMessage()
             ], 500);
         }
+    }
+
+
+    // 🔹 Nuevo: Reporte General para el Dashboard
+    public function reporteGeneral(Request $request)
+    {
+        try {
+            // Validar y parsear fechas
+            $fechaInicio = Carbon::parse($request->input('fecha_inicio'))->startOfDay();
+            $fechaFin = Carbon::parse($request->input('fecha_fin'))->endOfDay();
+
+            // Obtener todas las ventas en el rango
+            $ventas = Venta::whereBetween('created_at', [$fechaInicio, $fechaFin])->get();
+            $ventaIds = $ventas->pluck('id');
+
+            // Calcular estadísticas de resumen
+            $totalVentas = $ventas->sum('total_pago');
+            $cantidadPedidos = $ventas->count();
+
+            // Obtener productos más vendidos (sin límite)
+            $productosMasVendidos = DB::table('detalle_ventas')
+                ->join('productos', 'detalle_ventas.producto_id', '=', 'productos.id')
+                ->whereIn('detalle_ventas.venta_id', $ventaIds)
+                ->select('productos.nombre_producto', DB::raw('SUM(detalle_ventas.cantidad) as total_vendido'))
+                ->groupBy('productos.nombre_producto')
+                ->orderByDesc('total_vendido')
+                ->get();
+            
+            $productoEstrella = $productosMasVendidos->first()->nombre_producto ?? 'N/A';
+
+            // Obtener clientes frecuentes (sin límite)
+            $clientesFrecuentes = DB::table('ventas')
+                ->join('clientes', 'ventas.cliente_id', '=', 'clientes.id')
+                ->whereIn('ventas.id', $ventaIds)
+                ->select('clientes.nombre', 'clientes.apellidos', 'clientes.email', DB::raw('COUNT(ventas.id) as compras_realizadas'), DB::raw('SUM(ventas.total_pago) as total_gastado'))
+                ->groupBy('clientes.id', 'clientes.nombre', 'clientes.apellidos', 'clientes.email')
+                ->orderByDesc('compras_realizadas')
+                ->get();
+
+            // Obtener ventas por método de pago
+            $pedidoIds = $ventas->whereNotNull('pedido_id')->pluck('pedido_id');
+            $ventasPorMetodo = Pedido::whereIn('id', $pedidoIds)
+                ->whereNotNull('metodo_pago')
+                ->where('metodo_pago', '!=', '')
+                ->select('metodo_pago', DB::raw('SUM(total_pago) as total'), DB::raw('COUNT(*) as count'))
+                ->groupBy('metodo_pago')
+                ->get()
+                ->map(function ($item) {
+                    $item->metodo_pago = ucfirst($item->metodo_pago); // Capitalizar
+                    return $item;
+                });
+
+            // Devolver JSON estructurado
+            return response()->json([
+                'summary' => [
+                    'total_ventas' => $totalVentas,
+                    'cantidad_pedidos' => $cantidadPedidos,
+                    'producto_estrella' => $productoEstrella,
+                ],
+                'productos_mas_vendidos' => $productosMasVendidos,
+                'clientes_frecuentes' => $clientesFrecuentes,
+                'ventas_por_metodo_pago' => $ventasPorMetodo,
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Error al generar el reporte general', 'message' => $e->getMessage()], 500);
+        }
+    }
+
+
+    // 🔹 Exportar Productos Más Vendidos
+    public function exportProductosMasVendidos(Request $request, $format)
+    {
+        $fechaInicio = Carbon::parse($request->input('fecha_inicio'))->startOfDay();
+        $fechaFin = Carbon::parse($request->input('fecha_fin'))->endOfDay();
+
+        $ventas = Venta::whereBetween('created_at', [$fechaInicio, $fechaFin])->get();
+        $ventaIds = $ventas->pluck('id');
+
+        $productos = DB::table('detalle_ventas')
+            ->join('productos', 'detalle_ventas.producto_id', '=', 'productos.id')
+            ->whereIn('detalle_ventas.venta_id', $ventaIds)
+            ->select('productos.nombre_producto', DB::raw('SUM(detalle_ventas.cantidad) as total_vendido'))
+            ->groupBy('productos.nombre_producto')
+            ->orderByDesc('total_vendido')
+            ->get();
+
+        $data = [
+            'productos' => $productos,
+            'fechaInicio' => $fechaInicio->toDateString(),
+            'fechaFin' => $fechaFin->toDateString(),
+        ];
+
+        if ($format == 'xlsx') {
+            // Implement Excel export using Maatwebsite\Excel
+            // For simplicity, I'll return a basic array for now.
+            // A full implementation would use a dedicated Export class.
+            $exportData = $productos->map(function($item) {
+                return (array) $item;
+            })->toArray();
+            array_unshift($exportData, ['Producto', 'Total Vendido']); // Add header
+            return Excel::download(new \App\Exports\GenericExport($exportData), 'productos_mas_vendidos_' . $fechaInicio->toDateString() . '_' . $fechaFin->toDateString() . '.xlsx');
+        } elseif ($format == 'pdf') {
+            $pdf = PDF::loadView('admin.reportes.exports.productos_pdf', $data);
+            return $pdf->download('productos_mas_vendidos_' . $fechaInicio->toDateString() . '_' . $fechaFin->toDateString() . '.pdf');
+        }
+
+        return back()->with('error', 'Formato de exportación no soportado.');
+    }
+
+    // 🔹 Exportar Clientes Frecuentes
+    public function exportClientesFrecuentes(Request $request, $format)
+    {
+        $fechaInicio = Carbon::parse($request->input('fecha_inicio'))->startOfDay();
+        $fechaFin = Carbon::parse($request->input('fecha_fin'))->endOfDay();
+
+        $ventas = Venta::whereBetween('created_at', [$fechaInicio, $fechaFin])->get();
+        $ventaIds = $ventas->pluck('id');
+
+        $clientes = DB::table('ventas')
+            ->join('clientes', 'ventas.cliente_id', '=', 'clientes.id')
+            ->whereIn('ventas.id', $ventaIds)
+            ->select('clientes.nombre', DB::raw('COUNT(ventas.id) as compras_realizadas'), DB::raw('SUM(ventas.total_pago) as total_gastado'))
+            ->groupBy('clientes.id', 'clientes.nombre', 'clientes.apellidos', 'clientes.email')
+            ->orderByDesc('compras_realizadas')
+            ->get();
+
+        $data = [
+            'clientes' => $clientes,
+            'fechaInicio' => $fechaInicio->toDateString(),
+            'fechaFin' => $fechaFin->toDateString(),
+        ];
+
+        if ($format == 'xlsx') {
+            $exportData = $clientes->map(function($item) {
+                return (array) $item;
+            })->toArray();
+            array_unshift($exportData, ['Nombre', 'Compras Realizadas', 'Total Gastado']);
+            return Excel::download(new \App\Exports\GenericExport($exportData), 'clientes_frecuentes_' . $fechaInicio->toDateString() . '_' . $fechaFin->toDateString() . '.xlsx');
+        } elseif ($format == 'pdf') {
+            $pdf = PDF::loadView('admin.reportes.exports.clientes_pdf', $data);
+            return $pdf->download('clientes_frecuentes_' . $fechaInicio->toDateString() . '_' . $fechaFin->toDateString() . '.pdf');
+        }
+
+        return back()->with('error', 'Formato de exportación no soportado.');
+    }
+
+    // 🔹 Exportar Ventas por Método de Pago
+    public function exportVentasPorMetodo(Request $request, $format)
+    {
+        $fechaInicio = Carbon::parse($request->input('fecha_inicio'))->startOfDay();
+        $fechaFin = Carbon::parse($request->input('fecha_fin'))->endOfDay();
+
+        $ventas = Venta::whereBetween('created_at', [$fechaInicio, $fechaFin])->get();
+        $pedidoIds = $ventas->whereNotNull('pedido_id')->pluck('pedido_id');
+
+        $ventasPorMetodo = Pedido::whereIn('id', $pedidoIds)
+            ->whereNotNull('metodo_pago')
+            ->where('metodo_pago', '!=', '')
+            ->select('metodo_pago', DB::raw('SUM(total_pago) as total'), DB::raw('COUNT(*) as count'))
+            ->groupBy('metodo_pago')
+            ->get()
+            ->map(function ($item) {
+                $item->metodo_pago = ucfirst($item->metodo_pago);
+                return $item;
+            });
+
+        $data = [
+            'metodos' => $ventasPorMetodo,
+            'fechaInicio' => $fechaInicio->toDateString(),
+            'fechaFin' => $fechaFin->toDateString(),
+        ];
+
+        if ($format == 'xlsx') {
+            $exportData = $ventasPorMetodo->map(function($item) {
+                return (array) $item;
+            })->toArray();
+            array_unshift($exportData, ['Método de Pago', 'Total', 'Cantidad']);
+            return Excel::download(new \App\Exports\GenericExport($exportData), 'ventas_por_metodo_' . $fechaInicio->toDateString() . '_' . $fechaFin->toDateString() . '.xlsx');
+        } elseif ($format == 'pdf') {
+            $pdf = PDF::loadView('admin.reportes.exports.metodos_pago_pdf', $data);
+            return $pdf->download('ventas_por_metodo_' . $fechaInicio->toDateString() . '_' . $fechaFin->toDateString() . '.pdf');
+        }
+
+        return back()->with('error', 'Formato de exportación no soportado.');
     }
 
 

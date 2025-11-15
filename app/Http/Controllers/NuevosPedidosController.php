@@ -15,7 +15,6 @@ use MercadoPago\Client\Preference\PreferenceClient;
 use MercadoPago\Exceptions\MPApiException;
 use MercadoPago\MercadoPagoConfig;
 use Ratchet\Client\Connector; // 👈 CAMBIA esta línea
-use React\EventLoop\Factory;
 
 class NuevosPedidosController extends Controller
 {
@@ -78,11 +77,24 @@ class NuevosPedidosController extends Controller
             return response()->json(['error' => 'Esta mesa ya está ocupada'], 400);
         }
         $cliente = null;
-        if ($request->nombre && $request->correo) {
-            $cliente = Cliente::firstOrCreate([
-                'email' => $request->correo ?? 'sincorreo@example.com'
-            ], [
-                'nombre' => $request->nombre  ?? 'Cliente Anónimo',
+        if ($request->correo) {
+            // If there is an email, we can reliably find or create a client.
+            $cliente = Cliente::firstOrCreate(
+                ['email' => $request->correo],
+                ['nombre' => $request->nombre ?? 'Cliente Anónimo', 'apellidos' => 'No especificado']
+            );
+            // If client was found but a new name was given, update the name.
+            if ($request->filled('nombre') && $cliente->nombre !== $request->nombre) {
+                $cliente->nombre = $request->nombre;
+                $cliente->save();
+            }
+        } else if ($request->nombre) {
+            // If there is only a name, we can't reliably find a client.
+            // We create a new one each time with a unique placeholder email
+            // to avoid conflicts with a generic email address.
+            $cliente = Cliente::create([
+                'email' => 'temporal-'.uniqid().'@'.parse_url(config('app.url'), PHP_URL_HOST),
+                'nombre' => $request->nombre,
                 'apellidos' => 'No especificado'
             ]);
         }
@@ -108,6 +120,11 @@ class NuevosPedidosController extends Controller
         ]);
 
         foreach ($request->productos as $producto) {
+            $descripcion = $producto['nombre'];
+            if (isset($producto['caracteristicas']) && is_array($producto['caracteristicas']) && !empty($producto['caracteristicas'])) {
+                $descripcion .= ' (' . implode(', ', $producto['caracteristicas']) . ')';
+            }
+
             DetallePedido::create([
                 'pedido_id' => $pedido->id,
                 'producto_id' => $producto['id'],
@@ -115,7 +132,7 @@ class NuevosPedidosController extends Controller
                 'cantidad' => $producto['cantidad'],
                 'precio_unitario' => $producto['precio'],
                 'precio_total' => $producto['cantidad'] * $producto['precio'],
-                'descripcion' => $producto['nombre']
+                'descripcion' => $descripcion
             ]);
         }
 
@@ -157,8 +174,14 @@ class NuevosPedidosController extends Controller
             $nuevoSubtotal = $subtotalActual;
 
             foreach ($request->productos as $producto) {
+                $descripcion = $producto['nombre'];
+                if (isset($producto['caracteristicas']) && is_array($producto['caracteristicas']) && !empty($producto['caracteristicas'])) {
+                    $descripcion .= ' (' . implode(', ', $producto['caracteristicas']) . ')';
+                }
+
                 $detalle = DetallePedido::where('pedido_id', $pedido->id)
                     ->where('producto_id', $producto['id'])
+                    ->where('descripcion', $descripcion)
                     ->first();
 
                 if ($detalle) {
@@ -175,7 +198,7 @@ class NuevosPedidosController extends Controller
                         'cantidad' => $producto['cantidad'],
                         'precio_unitario' => $producto['precio'],
                         'precio_total' => $producto['cantidad'] * $producto['precio'],
-                        'descripcion' => $producto['nombre']
+                        'descripcion' => $descripcion
                     ]);
                 }
 

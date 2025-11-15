@@ -65,13 +65,20 @@ class CarritoController extends Controller
                 // Buscar el producto en la BD de manera segura
                 $productoDB = Producto::where('nombre_producto', $producto['nombre'])->first();
 
+                // Construir la descripción con las características
+                $descripcion = $producto['nombre'];
+                if (isset($producto['caracteristicas']) && is_array($producto['caracteristicas']) && !empty($producto['caracteristicas'])) {
+                    $descripcion .= ' (' . implode(', ', $producto['caracteristicas']) . ')';
+                }
+
                 DetallePedido::create([
                     'pedido_id' => $pedido->id,
                     'producto_id' => $productoDB ? $productoDB->id : null, // Si no existe, será NULL
                     'nombre_producto' => $producto['nombre'],
                     'cantidad' => $producto['cantidad'],
                     'precio_unitario' => $producto['precio'],
-                    'precio_total' => $producto['cantidad'] * $producto['precio']
+                    'precio_total' => $producto['cantidad'] * $producto['precio'],
+                    'descripcion' => $descripcion, // Guardar la descripción completa
                 ]);
             }
 
@@ -104,12 +111,21 @@ class CarritoController extends Controller
     {
         $producto = Producto::with('precios')->findOrFail($request->id);
         $precioVenta = $producto->precios ? $producto->precios->precio_venta : 0;
+
+        // Prepara las opciones, incluyendo las características personalizadas
+        $opciones = [];
+        if ($request->has('caracteristicas') && is_array($request->caracteristicas)) {
+            $opciones['caracteristicas'] = $request->caracteristicas;
+        }
+
         LaraCart::add(
             $producto->id,
             $producto->nombre_producto,
             $request->cantidad,
-            $precioVenta
+            $precioVenta,
+            $opciones // Añade las opciones al item del carrito
         );
+
         session()->flash('alert', [
             'type' => 'success',
             'title' => 'Producto agregado',

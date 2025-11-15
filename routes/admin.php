@@ -39,6 +39,13 @@ Route::get('reportes/semanal', [CajaController::class, 'reporteSemanal']);
 Route::get('reportes/mensual', [CajaController::class, 'reporteMensual']); 
 Route::get('reportes/rango', [CajaController::class, 'reportePorRango']);
 
+Route::get('reportes/general', [CajaController::class, 'reporteGeneral'])->name('admin.reportes.general');
+
+// Rutas para exportación de reportes
+Route::get('reportes/export/productos/{format}', [CajaController::class, 'exportProductosMasVendidos'])->name('admin.reportes.export.productos');
+Route::get('reportes/export/clientes/{format}', [CajaController::class, 'exportClientesFrecuentes'])->name('admin.reportes.export.clientes');
+Route::get('reportes/export/metodos-pago/{format}', [CajaController::class, 'exportVentasPorMetodo'])->name('admin.reportes.export.metodosPago');
+
 // Nuevas rutas para los reportes detallados
 Route::get('reportes/ventas-por-dia', [CajaController::class, 'ventasPorDia'])->name('admin.reportes.ventasPorDia');
 Route::get('reportes/frecuencia-clientes', [CajaController::class, 'frecuenciaClientes'])->name('admin.reportes.frecuenciaClientes');
