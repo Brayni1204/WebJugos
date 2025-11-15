@@ -3,6 +3,7 @@
     $logoPath = $empresa && $empresa->image_m ? public_path('storage/' . $empresa->image_m->url) : null;
 @endphp
 
+
 <style>
     .header-table {
         width: 100%;
