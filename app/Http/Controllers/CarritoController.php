@@ -22,28 +22,25 @@ class CarritoController extends Controller
     {
         try {
             // Obtener usuario autenticado
-            if (Auth::check()) {
-                $user = Auth::user();
-            } else {
+            $user = Auth::user();
+            if (!$user) {
                 return redirect()->route('login')->with('error', 'Debes iniciar sesión para realizar un pedido.');
             }
 
-            // Verificar si el cliente ya existe por su email
-            $cliente = Cliente::where('email', $request->email)->first();
-            if ($cliente) {
-                $cliente->update([
-                    'nombre' => $request->nombre,
-                    'apellidos' => $request->apellidos,
-                    'telefono' => $request->telefono
-                ]);
-            } else {
-                $cliente = Cliente::create([
-                    'nombre' => $request->nombre,
-                    'apellidos' => $request->apellidos,
-                    'email' => $request->email,
-                    'telefono' => $request->telefono
-                ]);
-            }
+            // Obtener el cliente asociado al usuario o crearlo si no existe
+            $cliente = $user->cliente()->firstOrCreate(
+                ['user_id' => $user->id],
+                ['email' => $user->email] // Asegura que el email esté sincronizado al crear
+            );
+
+            // Actualizar los datos del cliente con la información del formulario
+            $cliente->update([
+                'nombre' => $request->nombre,
+                'apellidos' => $request->apellidos,
+                'telefono' => $request->telefono,
+                'email' => $request->email, // Permite actualizar el email si es necesario
+            ]);
+
 
             // Crear el pedido
             $pedido = Pedido::create([
@@ -135,7 +132,16 @@ class CarritoController extends Controller
     }
     public function verCarrito()
     {
-        return view('views.carrito', ['items' => LaraCart::getItems()]);
+        $cliente = null;
+        if (Auth::check()) {
+            // Eager load the cliente relationship
+            $cliente = Auth::user()->load('cliente')->cliente;
+        }
+
+        return view('views.carrito', [
+            'items' => LaraCart::getItems(),
+            'cliente' => $cliente,
+        ]);
     }
     public function incrementarCantidad($id)
     {

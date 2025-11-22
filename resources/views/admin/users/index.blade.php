@@ -51,41 +51,6 @@
         .back-btn:hover {
             background-color: #b02a37;
         }
-
-        .status-btn {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 0;
-        }
-
-        .draft-btn {
-            background-color: #f39c12;
-        }
-
-        .draft-btn:hover {
-            background-color: #d68910;
-        }
-
-        .publish-btn {
-            background-color: #28a745;
-        }
-
-        .publish-btn:hover {
-            background-color: #218838;
-        }
-
-        .view-btn {
-            background-color: #17a2b8;
-        }
-
-        .view-btn:hover {
-            background-color: #138496;
-        }
-
-        .floating-btn-form {
-            display: inline-block;
-        }
     </style>
 @stop
 

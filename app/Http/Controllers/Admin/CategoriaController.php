@@ -32,7 +32,7 @@ class CategoriaController extends Controller
             'nombre_categoria' => 'required|unique:categorias,nombre_categoria|max:100',
             'descripcion'      => 'nullable|string',
             'status'           => 'required|in:1,2',
-            'imagen'           => 'nullable|image|mimes:jpg,png,jpeg|max:2048'
+            'imagen'           => 'nullable|image|mimes:jpg,png,jpeg'
         ]);
 
         // Crear nueva categoría
@@ -67,7 +67,7 @@ class CategoriaController extends Controller
             'nombre_categoria' => 'required|max:100|unique:categorias,nombre_categoria,' . $categorium->id,
             'descripcion'      => 'nullable|string',
             'status'           => 'required|in:1,2',
-            'imagen'           => 'nullable|image|mimes:jpg,png,jpeg|max:2048'
+            'imagen'           => 'nullable|image|mimes:jpg,png,jpeg'
         ]);
         $categorium->update([
             'nombre_categoria' => $request->nombre_categoria,

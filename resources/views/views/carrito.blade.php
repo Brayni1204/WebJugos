@@ -140,29 +140,29 @@
                                 <form id="pedidoForm" method="POST" action="{{ route('pedido.realizar') }}">
                                     @csrf
 
-                                                                         <div>
-                                                                            <!-- Datos ocultos de los productos -->
-                                                                                                                    @foreach ($items as $item)
-                                                                                                                        <input type="hidden" name="productos[{{ $loop->index }}][nombre]"
-                                                                                                                            value="{{ $item->name }}">
-                                                                                                                        <input type="hidden" name="productos[{{ $loop->index }}][cantidad]"
-                                                                                                                            value="{{ $item->qty }}">
-                                                                                                                        <input type="hidden" name="productos[{{ $loop->index }}][precio]"
-                                                                                                                            value="{{ $item->price }}">
-                                                                                                                        @if (isset($item->options['caracteristicas']))
-                                                                                                                            @foreach ($item->options['caracteristicas'] as $caracteristica)
-                                                                                                                                <input type="hidden"
-                                                                                                                                    name="productos[{{ $loop->index }}][caracteristicas][]"
-                                                                                                                                    value="{{ $caracteristica }}">
-                                                                                                                            @endforeach
-                                                                                                                        @endif
-                                                                                                                    @endforeach                                    
-                                                                            <input type="hidden" name="subtotal" value="{{ $subtotal }}">
-                                                                            <input type="hidden" name="costo_delivery" id="costo_delivery_input"
-                                                                                value="0">
-                                                                            <input type="hidden" name="total_pago" id="total_pago_input"
-                                                                                value="{{ $subtotal }}">
-                                                                        </div>
+                                    <div>
+                                        <!-- Datos ocultos de los productos -->
+                                        @foreach ($items as $item)
+                                            <input type="hidden" name="productos[{{ $loop->index }}][nombre]"
+                                                value="{{ $item->name }}">
+                                            <input type="hidden" name="productos[{{ $loop->index }}][cantidad]"
+                                                value="{{ $item->qty }}">
+                                            <input type="hidden" name="productos[{{ $loop->index }}][precio]"
+                                                value="{{ $item->price }}">
+                                            @if (isset($item->options['caracteristicas']))
+                                                @foreach ($item->options['caracteristicas'] as $caracteristica)
+                                                    <input type="hidden"
+                                                        name="productos[{{ $loop->index }}][caracteristicas][]"
+                                                        value="{{ $caracteristica }}">
+                                                @endforeach
+                                            @endif
+                                        @endforeach
+                                        <input type="hidden" name="subtotal" value="{{ $subtotal }}">
+                                        <input type="hidden" name="costo_delivery" id="costo_delivery_input"
+                                            value="0">
+                                        <input type="hidden" name="total_pago" id="total_pago_input"
+                                            value="{{ $subtotal }}">
+                                    </div>
                                     <!-- Datos del Cliente -->
                                     <div class="mt-6 p-4 bg-white shadow-md rounded-lg">
                                         <h2 class="text-lg font-bold text-gray-800">Información del Cliente</h2>
@@ -170,29 +170,33 @@
                                             <div class="w-full md:w-1/2">
                                                 <label for="nombre" class="text-gray-500 text-lg">Nombre:</label>
                                                 <input type="text" name="nombre" id="nombre" required
-                                                    class="w-full p-2 border rounded" autocomplete="off">
+                                                    class="w-full p-2 border rounded" autocomplete="off"
+                                                    value="{{ $cliente->nombre ?? '' }}">
 
-                                                <label for="apellidos" class="text-gray-500 text-lg">Apellidos:</label>
-                                                <input type="text" name="apellidos" id="apellidos" required
-                                                    class="w-full p-2 border rounded" autocomplete="off">
+                                                <label for="apellidos"
+                                                    class="text-gray-500 text-lg">Apellidos:</label>
+                                                <input type="text" name="apellidos" id="apellidos"
+                                                    class="w-full p-2 border rounded" autocomplete="off"
+                                                    value="{{ $cliente->apellidos ?? '' }}">
                                             </div>
                                             <div class="w-full md:w-1/2">
                                                 <label for="email" class="text-gray-500 text-lg">Correo
                                                     Electrónico:</label>
                                                 <input type="email" name="email" id="email" required
                                                     class="w-full p-2 border rounded" autocomplete="off"
-                                                    placeholder="ejemplo@correo.com">
+                                                    placeholder="ejemplo@correo.com"
+                                                    value="{{ $cliente->email ?? '' }}">
 
                                                 <label for="telefono" class="text-gray-500 text-lg">Teléfono:</label>
                                                 <input type="tel" name="telefono" id="telefono" required
                                                     class="w-full p-2 border rounded" autocomplete="off"
                                                     placeholder="987654321" maxlength="9" pattern="[0-9]{9}"
                                                     title="Ingrese un número de 9 dígitos"
-                                                    oninput="this.value = this.value.replace(/\D/g, '')">
+                                                    oninput="this.value = this.value.replace(/\D/g, '')"
+                                                    value="{{ $cliente->telefono ?? '' }}">
                                             </div>
                                         </div>
                                     </div>
-
                                     <!-- Método de Entrega -->
                                     <div class="mt-6">
                                         <h2 class="text-xl font-bold text-gray-800">Método de Entrega</h2>

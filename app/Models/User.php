@@ -37,11 +37,18 @@ class User extends Authenticatable
     protected $appends = [
         'profile_photo_url',
     ];
-    protected function casts(): array
+    /**
+     * The attributes that should be cast.
+     * 
+     * @var array<string, string>
+     */
+    protected $casts = [
+        'email_verified_at' => 'datetime',
+        'two_factor_confirmed_at' => 'datetime',
+    ];
+
+    public function cliente()
     {
-        return [
-            'email_verified_at' => 'datetime',
-            'password' => 'hashed',
-        ];
+        return $this->hasOne(Cliente::class);
     }
 }

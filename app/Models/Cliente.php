@@ -20,4 +20,9 @@ class Cliente extends Model
     {
         return $this->hasMany(Pedido::class);
     }
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
 }

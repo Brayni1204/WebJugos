@@ -1,23 +1,25 @@
 <?php
 
-use App\Http\Controllers\Admin\CajaController;
+use App\Http\Controllers\admin\CajaController;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Admin\CategoriaController;
-use App\Http\Controllers\Admin\CreandoNuevosPedidosController;
-use App\Http\Controllers\Admin\CreandoNuevosPedidosDetalleController;
-use App\Http\Controllers\Admin\EmpresaController;
+use App\Http\Controllers\admin\CategoriaController;
+use App\Http\Controllers\admin\CreandoNuevosPedidosController;
+use App\Http\Controllers\admin\CreandoNuevosPedidosDetalleController;
+use App\Http\Controllers\admin\EmpresaController;
 use App\Http\Controllers\admin\HomeController;
-use App\Http\Controllers\Admin\MesaController;
-use App\Http\Controllers\Admin\PaginaController;
-use App\Http\Controllers\Admin\ParrafoController;
+use App\Http\Controllers\admin\MesaController;
+use App\Http\Controllers\admin\PaginaController;
+use App\Http\Controllers\admin\ParrafoController;
 use App\Http\Controllers\admin\ProductosController;
-use App\Http\Controllers\Admin\SubtituloController;
-use App\Http\Controllers\Admin\UserController;
-use App\Http\Controllers\Admin\VentaController;
+use App\Http\Controllers\admin\SubtituloController;
+use App\Http\Controllers\admin\UserController;
+use App\Http\Controllers\admin\VentaController;
+use App\Http\Controllers\admin\RoleController;
 
 Route::get('', [HomeController::class, 'index'])->middleware('can:admin.home')->name('admin.home');
 
 Route::resource('users', UserController::class)->only('index', 'edit', 'update')->middleware('can:admin.users.index')->names('admin.users');
+Route::resource('roles', RoleController::class)->except('show')->middleware('can:admin.roles.index')->names('admin.roles');
 Route::resource('categoria', CategoriaController::class)->middleware('can:admin.categoria.index')->names('admin.categoria');
 
 Route::resource('producto', ProductosController::class)->middleware('can:admin.productos.index')->names('admin.producto');
@@ -36,7 +38,7 @@ Route::patch('mesas/{mesa}/toggle-status', [MesaController::class, 'toggleStatus
 Route::get('reportes', [CajaController::class, 'index'])->name('admin.reportes.index');
 Route::get('reportes/diario', [CajaController::class, 'reporteDiario']);
 Route::get('reportes/semanal', [CajaController::class, 'reporteSemanal']);
-Route::get('reportes/mensual', [CajaController::class, 'reporteMensual']); 
+Route::get('reportes/mensual', [CajaController::class, 'reporteMensual']);
 Route::get('reportes/rango', [CajaController::class, 'reportePorRango']);
 
 Route::get('reportes/general', [CajaController::class, 'reporteGeneral'])->name('admin.reportes.general');
@@ -65,7 +67,7 @@ Route::resource('nuevodetallepedido', CreandoNuevosPedidosDetalleController::cla
 Route::get('nuevodetallepedido/{pedidoId}/detalles', [CreandoNuevosPedidosDetalleController::class, 'obtenerDetallesPedido'])->name('admin.nuevospedidosdetalleadmin.detalles');
 
 // ... (dentro de tu grupo de rutas de administrador)
-Route::get('/nuevopedido/actualizar-tabla', [App\Http\Controllers\Admin\CreandoNuevosPedidosController::class, 'actualizarTabla'])->name('admin.nuevospedidos.actualizarTabla');
+Route::get('/nuevopedido/actualizar-tabla', [App\Http\Controllers\admin\CreandoNuevosPedidosController::class, 'actualizarTabla'])->name('admin.nuevospedidos.actualizarTabla');
 
 /* Route::get('pedidos/{pedido}/comprobante', [CreandoNuevosPedidosController::class, 'generarComprobante'])->name('admin.pedidos.generarComprobante'); */
 Route::post('pedidos/{pedido}/completar', [CreandoNuevosPedidosController::class, 'completarPedido'])->name('admin.pedidos.completar');
