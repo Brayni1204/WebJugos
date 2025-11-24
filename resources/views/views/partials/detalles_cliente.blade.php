@@ -14,7 +14,7 @@
         <div class="relative">
             @if ($detalle->producto->image->isNotEmpty())
                 <img class="h-32 w-full object-cover"
-                    src="{{ asset('storage/' . $detalle->producto->image->first()->url) }}"
+                    src="{{ $detalle->producto->image->first()->url }}"
                     alt="{{ $nombreBase }}">
             @else
                 <div

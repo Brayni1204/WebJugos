@@ -7,9 +7,13 @@ use App\Models\Pagina;
 use App\Models\Subtitulo;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use App\Http\Traits\ImageUploadTrait;
+use Illuminate\Support\Facades\DB;
 
 class SubtituloController extends Controller
 {
+    use ImageUploadTrait;
+
     public function index() {}
     public function create(Request $request)
     {
@@ -27,44 +31,36 @@ class SubtituloController extends Controller
             'imagen' => 'nullable|image'
         ]);
 
-        $subtitulo = Subtitulo::create([
-            'id_pagina' => $request->id_pagina,
-            'titulo_subtitulo' => $request->titulo_subtitulo,
-            'resumen' => $request->resumen,
-            'status' => $request->status,
-        ]);
-
-        if ($request->hasFile('imagen')) {
-            $url = $request->file('imagen')->store('Subtitulo', 'public');
-            $subtitulo->image()->create(['url' => $url]);
+        DB::beginTransaction();
+        try {
+            $subtitulo = Subtitulo::create($request->only(['id_pagina', 'titulo_subtitulo', 'resumen', 'status']));
+            $this->storeImage($request, $subtitulo, 'imagen', 'Subtitulo');
+            DB::commit();
+            return redirect()->route('admin.subtitulos.show', $subtitulo->id)
+                ->with('info', 'Subtítulo creado correctamente.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->withErrors(['error' => 'Error al crear el subtítulo.']);
         }
-
-        return redirect()->route('admin.subtitulos.show', $subtitulo->id)
-            ->with('info', 'Subtítulo actualizado correctamente.');
     }
 
     public function show($subtituloId)
     {
-        // Obtener el subtítulo con sus párrafos y la página asociada
         $subtitulo = Subtitulo::with(['Parrafo', 'Paginas', 'image'])
             ->where('id', $subtituloId)
             ->firstOrFail();
 
-        // Verificar si el subtítulo tiene una página asociada
         if (!$subtitulo->Paginas) {
             abort(404, 'La página asociada al subtítulo no existe.');
         }
 
-        // Obtener la página actual
         $paginaActual = $subtitulo->Paginas;
 
-        // Obtener los subtítulos relacionados de la misma página, excluyendo el actual
         $subtitulosRelacionados = Subtitulo::where('id_pagina', $paginaActual->id)
             ->where('id', '!=', $subtituloId)
             ->with('image')
             ->get();
 
-        // Retornar la vista con los datos
         return view('admin.subtitulos.show', compact('subtitulo', 'paginaActual', 'subtitulosRelacionados'));
     }
 
@@ -82,46 +78,60 @@ class SubtituloController extends Controller
             'imagen' => 'nullable|image',
         ]);
 
-        // 🔹 Actualizar los datos del subtítulo
-        $subtitulo->update([
-            'titulo_subtitulo' => $request->titulo_subtitulo,
-            'resumen' => $request->resumen,
-            'status' => $request->status,
-        ]);
-
-        // 🔹 Verificar si se subió una nueva imagen
-        if ($request->hasFile('imagen')) {
-            // Eliminar la imagen anterior si existe
-            if ($subtitulo->image) {
-                Storage::disk('public')->delete($subtitulo->image->url);
-                $subtitulo->image()->delete(); // Eliminar la referencia en la BD
-            }
-
-            // Guardar la nueva imagen
-            $url = $request->file('imagen')->store('Subtitulo', 'public');
-            $subtitulo->image()->create(['url' => $url]);
+        DB::beginTransaction();
+        try {
+            $subtitulo->update($request->only(['titulo_subtitulo', 'resumen', 'status']));
+            $this->updateImage($request, $subtitulo, 'imagen', 'Subtitulo');
+            DB::commit();
+            return redirect()->route('admin.subtitulos.show', $subtitulo->id)
+                ->with('info', 'Subtítulo actualizado correctamente.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->withErrors(['error' => 'Error al actualizar el subtítulo.']);
         }
-
-        return redirect()->route('admin.subtitulos.show', $subtitulo->id)
-            ->with('info', 'Subtítulo actualizado correctamente.');
     }
 
 
     public function destroy(Subtitulo $subtitulo)
     {
-        // Obtener la página antes de eliminar el subtítulo
-        $pagina = $subtitulo->pagina;
+        $pagina = $subtitulo->Paginas;
+        DB::beginTransaction();
+        try {
+            if ($subtitulo->image) {
+                $publicId = $this->extractPublicId($subtitulo->image->getRawOriginal('url'));
+                if ($publicId) {
+                    \CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary::uploadApi()->destroy($publicId);
+                }
+                $subtitulo->image()->delete();
+            }
 
-        // Eliminar la imagen asociada si existe
-        if ($subtitulo->image) {
-            Storage::disk('public')->delete($subtitulo->image->url);
-            $subtitulo->image()->delete();
+            $subtitulo->delete();
+            DB::commit();
+            return redirect()->route('admin.paginas.show', $pagina)->with('info', 'Subtítulo eliminado correctamente.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->withErrors(['error' => 'Error al eliminar el subtítulo.']);
+        }
+    }
+
+    private function extractPublicId($url)
+    {
+        if (!$url) {
+            return null;
+        }
+        $parts = parse_url($url);
+        if (!isset($parts['path'])) {
+            return null;
+        }
+        $path = $parts['path'];
+
+        if (preg_match('/\/upload\/(?:v\d+\/)?(.+)/', $path, $matches)) {
+            $publicId = $matches[1];
+            // Remove file extension
+            $publicId = preg_replace('/\.[^.]*$/', '', $publicId);
+            return $publicId;
         }
 
-        // Eliminar el subtítulo
-        $subtitulo->delete();
-
-        // Redirigir de vuelta a la página correspondiente
-        return redirect()->route('admin.paginas.show', $pagina)->with('info', 'Subtítulo eliminado correctamente.');
+        return null;
     }
 }

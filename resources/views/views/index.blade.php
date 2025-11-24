@@ -92,7 +92,7 @@
                             <!-- 🟢 Imagen con fondo circular -->
                             <div
                                 class="w-16 h-16 bg-blue-500 rounded-full overflow-hidden flex items-center justify-center mb-4">
-                                <img src="{{ asset('storage/' . $subtitulo->image->url) }}"
+                                <img src="{{ $subtitulo->image->url }}"
                                     alt="{{ $subtitulo->titulo_subtitulo }}"
                                     class="w-full h-full object-cover rounded-full">
                             </div>
@@ -125,7 +125,7 @@
                         class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition duration-300 flex flex-col h-full">
                         <!-- Imagen de la categoría -->
                         @if ($categorias->image->isNotEmpty())
-                            <img src="{{ asset('storage/' . $categorias->image->first()->url) }}"
+                            <img src="{{ $categorias->image->first()->url }}"
                                 alt="{{ $categorias->nombre_categoria }}"
                                 class="w-full h-48 object-cover p-1 rounded-2xl">
                         @else

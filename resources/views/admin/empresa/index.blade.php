@@ -19,7 +19,7 @@
             <div class="card bg-white shadow-lg mb-4">
                 <div class="w-full">
                     <div
-                        class="flex flex-col md:flex-row items-center bg-white p-6 w-full min-h-[70vh] shadow-lg rounded-lg gap-6">
+                        class="flex flex-col md:flex-row items-center bg-white p-6 w-full shadow-lg rounded-lg gap-6 md:min-h-[40vh] lg:min-h-[50vh]">
                         <!-- Sección de Texto -->
                         <div class="w-full md:w-1/2 p-6 flex flex-col justify-center text-center md:text-left">
                             <p class="text-gray-500 text-sm">Bienvenidos a</p>
@@ -38,13 +38,13 @@
                         <!-- Sección de Imagen -->
                         <div class="w-full md:w-1/2 flex justify-center">
                             <div
-                                class="w-48 h-48 sm:w-64 sm:h-64 md:w-80 md:h-80 lg:w-96 lg:h-96 rounded-full border-8 border-yellow-400 overflow-hidden shadow-md">
+                                class="w-32 h-32 sm:w-48 sm:h-48 md:w-64 md:h-64 lg:w-72 lg:h-72 rounded-full border-4 border-yellow-400 overflow-hidden shadow-md">
                                 @php
                                     $ultimaImagen = $empresa->first()->image_m()->latest()->first();
                                 @endphp
                                 @if ($ultimaImagen)
                                     <img class="w-full h-full object-cover"
-                                        src="{{ asset('storage/' . $ultimaImagen->url) }}" alt="Robot">
+                                        src="{{ $ultimaImagen->url }}" alt="Logo">
                                 @else
                                     <img class="w-full h-full object-cover" src="/mnt/data/image.png"
                                         alt="Robot por defecto">
@@ -120,8 +120,8 @@
                             <div class="card shadow-lg">
                                 <div class="card-body text-center">
                                     <h4 class="font-bold text-gray-900">ICONO DEL NAVEGADOR</h4>
-                                    <img src="{{ asset('storage/' . $empresas->favicon_url) }}" class="img-fluid rounded"
-                                        alt="Favicon">
+                                    <img src="{{ $empresas->favicon_url }}" class="img-fluid rounded"
+                                        alt="Favicon" style="width: 64px; height: 64px; object-fit: contain;">
                                 </div>
                             </div>
                         </div>

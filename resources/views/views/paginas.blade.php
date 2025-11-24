@@ -17,7 +17,7 @@
 
                 <!-- 📌 Artículo Principal con Imagen de Fondo -->
                 <article class="relative w-full h-[600px] bg-cover bg-center shadow-lg rounded-lg overflow-hidden"
-                    style="background-image: url({{ Storage::url($pagina->image_pagina->url) }});">
+                    style="background-image: url({{ $pagina->image_pagina->url }});">
                     <div
                         class="absolute inset-0 bg-black bg-opacity-40 flex flex-col justify-center items-center text-center px-8">
                         <div class="bg-white bg-opacity-75 p-6 rounded-lg shadow-lg max-w-3xl">
@@ -60,7 +60,7 @@
                                         {{ $subtitulo->resumen }}
                                     </p>
                                     @if ($subtitulo->image)
-                                        <img src="{{ asset('storage/' . $subtitulo->image->url) }}"
+                                        <img src="{{ $subtitulo->image->url }}"
                                             alt="{{ $subtitulo->titulo_subtitulo }}"
                                             class="h-48 w-full object-cover rounded-lg shadow-md mb-4">
                                     @endif
@@ -89,7 +89,7 @@
                             @foreach ($productos as $producto)
                                 @if ($producto->image && $producto->image->isNotEmpty())
                                     <a href="{{ route('views.productos') . '?categoria=' . $producto->id_categoria }}">
-                                        <img src="{{ asset('storage/' . $producto->image->first()->url) }}"
+                                        <img src="{{ $producto->image->first()->url }}"
                                             alt="{{ $producto->nombre_producto }}"
                                             class="h-10 w-14 object-cover rounded-md shadow-md transition-transform transform hover:scale-110">
                                     </a>
@@ -99,7 +99,7 @@
                             @foreach ($productos as $producto)
                                 @if ($producto->image && $producto->image->isNotEmpty())
                                     <a href="{{ route('views.productos') . '?categoria=' . $producto->id_categoria }}">
-                                        <img src="{{ asset('storage/' . $producto->image->first()->url) }}"
+                                        <img src="{{ $producto->image->first()->url }}"
                                             alt="{{ $producto->nombre_producto }}"
                                             class="h-10 w-14 object-cover rounded-md shadow-md transition-transform transform hover:scale-110">
                                     </a>

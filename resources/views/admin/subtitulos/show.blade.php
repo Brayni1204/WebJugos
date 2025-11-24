@@ -16,7 +16,7 @@
                 <div style="width: 100%">
                     <div style="width: 100%; display: flex; justify-content: center">
                         @if ($subtitulo->image)
-                            <img src="{{ Storage::url($subtitulo->image->url) }}" alt="{{ $subtitulo->titulo_subtitulo }}"
+                            <img src="{{ $subtitulo->image->url }}" alt="{{ $subtitulo->titulo_subtitulo }}"
                                 class="object-cover rounded-lg mb-6" style="width: 80%">
                         @endif
                     </div>

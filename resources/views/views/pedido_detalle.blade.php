@@ -8,7 +8,7 @@
         $empresa = \App\Models\Empresa::latest()->first();
         $favicon =
             $empresa && $empresa->favicon_url
-                ? asset('storage/' . $empresa->favicon_url)
+                ? $empresa->favicon_url
                 : asset('default-favicon.ico');
     @endphp
 
@@ -165,7 +165,7 @@
                                             <div
                                                 class="w-16 h-16 flex-shrink-0 overflow-hidden rounded-md border border-gray-200">
                                                 @if ($detalle->producto->image->isNotEmpty())
-                                                    <img src="{{ asset('storage/' . $detalle->producto->image->first()->url) }}"
+                                                    <img src="{{ $detalle->producto->image->first()->url }}"
                                                         alt="{{ $nombreBase }}" class="w-full h-full object-cover">
                                                 @else
                                                     <div
@@ -261,7 +261,7 @@
                                         // Esto previene el "Attempt to read property 'url' on null"
                                         $imageUrl = '';
                                         if ($producto->image->isNotEmpty()) {
-                                            $imageUrl = asset('storage/' . ($producto->image->first()->url ?? ''));
+                                            $imageUrl = ($producto->image->first()->url ?? '');
                                         }
                                     @endphp
                                     <button {{-- Usamos la variable $imageUrl precalculada --}}
@@ -270,7 +270,7 @@
                                         data-nombre="{{ strtolower($producto->nombre_producto) }}">
                                         <div class="w-full aspect-[4/5] overflow-hidden rounded-md">
                                             @if ($producto->image->isNotEmpty())
-                                                <img src="{{ asset('storage/' . $producto->image->first()->url) }}"
+                                                <img src="{{ $producto->image->first()->url }}"
                                                     alt="{{ $producto->nombre_producto }}"
                                                     class="w-full h-full object-cover">
                                             @else

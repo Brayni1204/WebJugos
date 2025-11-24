@@ -50,7 +50,7 @@
                                     <label>Imagen Actual:</label><br>
                                     <div class="image-container">
                                         @if ($pagina->image_pagina)
-                                            <img src="{{ Storage::url($pagina->image_pagina->url) }}" width="600">
+                                            <img src="{{ $pagina->image_pagina->url }}" width="600">
                                         @else
                                             <small>Sin imagen</small>
                                         @endif

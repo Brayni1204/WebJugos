@@ -5,6 +5,7 @@
 namespace Algolia\AlgoliaSearch\Api;
 
 use Algolia\AlgoliaSearch\Algolia;
+use Algolia\AlgoliaSearch\Configuration\IngestionConfig;
 use Algolia\AlgoliaSearch\Configuration\SearchConfig;
 use Algolia\AlgoliaSearch\Exceptions\ExceededRetriesException;
 use Algolia\AlgoliaSearch\Exceptions\NotFoundException;
@@ -84,12 +85,17 @@ use GuzzleHttp\Psr7\Query;
  */
 class SearchClient
 {
-    public const VERSION = '4.19.0';
+    public const VERSION = '4.35.0';
 
     /**
      * @var ApiWrapperInterface
      */
     protected $api;
+
+    /**
+     * @var IngestionClient
+     */
+    protected $ingestionTransporter;
 
     /**
      * @var SearchConfig
@@ -128,7 +134,23 @@ class SearchClient
             self::getClusterHosts($config)
         );
 
-        return new static($apiWrapper, $config);
+        $client = new static($apiWrapper, $config);
+
+        if (null !== $config->getTransformationRegion()) {
+            $ingestionConfig = IngestionConfig::create($config->getAppId(), $config->getAlgoliaApiKey(), $config->getTransformationRegion());
+
+            if ($hosts = $config->getHosts()) {
+                if ($config->getHasFullHosts()) {
+                    $ingestionConfig = $ingestionConfig->setFullHosts($hosts);
+                } else {
+                    $ingestionConfig = $ingestionConfig->setHosts($hosts);
+                }
+            }
+
+            $client->ingestionTransporter = IngestionClient::createWithConfig($ingestionConfig);
+        }
+
+        return $client;
     }
 
     /**
@@ -183,7 +205,7 @@ class SearchClient
      *                             - $apiKey['description'] => (string) Description of an API key to help you identify this API key.
      *                             - $apiKey['indexes'] => (array) Index names or patterns that this API key can access. By default, an API key can access all indices in the same application.  You can use leading and trailing wildcard characters (`*`):  - `dev_*` matches all indices starting with \"dev_\". - `*_dev` matches all indices ending with \"_dev\". - `*_products_*` matches all indices containing \"_products_\".
      *                             - $apiKey['maxHitsPerQuery'] => (int) Maximum number of results this API key can retrieve in one query. By default, there's no limit.
-     *                             - $apiKey['maxQueriesPerIPPerHour'] => (int) Maximum number of API requests allowed per IP address or [user token](https://www.algolia.com/doc/guides/sending-events/concepts/usertoken/) per hour.  If this limit is reached, the API returns an error with status code `429`. By default, there's no limit.
+     *                             - $apiKey['maxQueriesPerIPPerHour'] => (int) Maximum number of API requests allowed per IP address or [user token](https://www.algolia.com/doc/guides/sending-events/concepts/usertoken) per hour.  If this limit is reached, the API returns an error with status code `429`. By default, there's no limit.
      *                             - $apiKey['queryParameters'] => (string) Query parameters to add when making API requests with this API key.  To restrict this API key to specific IP addresses, add the `restrictSources` parameter. You can only add a single source, but you can provide a range of IP addresses.  Creating an API key fails if the request is made from an IP address outside the restricted range.
      *                             - $apiKey['referers'] => (array) Allowed HTTP referrers for this API key.  By default, all referrers are allowed. You can use leading and trailing wildcard characters (`*`):  - `https://algolia.com/_*` allows all referrers starting with \"https://algolia.com/\" - `*.algolia.com` allows all referrers ending with \".algolia.com\" - `*algolia.com*` allows all referrers in the domain \"algolia.com\".  Like all HTTP headers, referrers can be spoofed. Don't rely on them to secure your data. For more information, see [HTTP referrer restrictions](https://www.algolia.com/doc/guides/security/security-best-practices/#http-referrers-restrictions).
      *                             - $apiKey['validity'] => (int) Duration (in seconds) after which the API key expires. By default, API keys don't expire.
@@ -212,7 +234,7 @@ class SearchClient
     }
 
     /**
-     * If a record with the specified object ID exists, the existing record is replaced. Otherwise, a new record is added to the index.  If you want to use auto-generated object IDs, use the [`saveObject` operation](#tag/Records/operation/saveObject). To update _some_ attributes of an existing record, use the [`partial` operation](#tag/Records/operation/partialUpdateObject) instead. To add, update, or replace multiple records, use the [`batch` operation](#tag/Records/operation/batch).
+     * If a record with the specified object ID exists, the existing record is replaced. Otherwise, a new record is added to the index.  If you want to use auto-generated object IDs, use the [`saveObject` operation](https://www.algolia.com/doc/rest-api/search/save-object). To update _some_ attributes of an existing record, use the [`partial` operation](https://www.algolia.com/doc/rest-api/search/partial-update-object) instead. To add, update, or replace multiple records, use the [`batch` operation](https://www.algolia.com/doc/rest-api/search/batch).
      *
      * Required API Key ACLs:
      *  - addObject
@@ -348,7 +370,10 @@ class SearchClient
     }
 
     /**
-     * Adds, updates, or deletes records in one index with a single API request.  Batching index updates reduces latency and increases data integrity.  - Actions are applied in the order they're specified. - Actions are equivalent to the individual API requests of the same name.  This operation is subject to [indexing rate limits](https://support.algolia.com/hc/en-us/articles/4406975251089-Is-there-a-rate-limit-for-indexing-on-Algolia).
+     * Adds, updates, or deletes records in one index with a single API request.  Batching index updates reduces latency and increases data integrity.  - Actions are applied in the order they're specified. - Actions are equivalent to the individual API requests of the same name.  This operation is subject to [indexing rate limits](https://support.algolia.com/hc/articles/4406975251089-Is-there-a-rate-limit-for-indexing-on-Algolia).
+     *
+     * Required API Key ACLs:
+     *  - addObject
      *
      * @param string                 $indexName        Name of the index on which to perform the operation. (required)
      * @param array|BatchWriteParams $batchWriteParams batchWriteParams (required)
@@ -527,7 +552,7 @@ class SearchClient
     }
 
     /**
-     * Deletes only the records from an index while keeping settings, synonyms, and rules. This operation is resource-intensive and subject to [indexing rate limits](https://support.algolia.com/hc/en-us/articles/4406975251089-Is-there-a-rate-limit-for-indexing-on-Algolia).
+     * Deletes only the records from an index while keeping settings, synonyms, and rules. This operation is resource-intensive and subject to [indexing rate limits](https://support.algolia.com/hc/articles/4406975251089-Is-there-a-rate-limit-for-indexing-on-Algolia).
      *
      * Required API Key ACLs:
      *  - deleteIndex
@@ -650,7 +675,7 @@ class SearchClient
     /**
      * This method lets you send requests to the Algolia REST API.
      *
-     * @param string $path           Path of the endpoint, anything after \"/1\" must be specified. (required)
+     * @param string $path           Path of the endpoint, for example `1/newFeature`. (required)
      * @param array  $parameters     Query parameters to apply to the current query. (optional)
      * @param array  $requestOptions the requestOptions to send along with the query, they will be merged with the transporter requestOptions
      *
@@ -689,7 +714,7 @@ class SearchClient
     /**
      * This method lets you send requests to the Algolia REST API.
      *
-     * @param string $path           Path of the endpoint, anything after \"/1\" must be specified. (required)
+     * @param string $path           Path of the endpoint, for example `1/newFeature`. (required)
      * @param array  $parameters     Query parameters to apply to the current query. (optional)
      * @param array  $requestOptions the requestOptions to send along with the query, they will be merged with the transporter requestOptions
      *
@@ -728,7 +753,7 @@ class SearchClient
     /**
      * This method lets you send requests to the Algolia REST API.
      *
-     * @param string $path           Path of the endpoint, anything after \"/1\" must be specified. (required)
+     * @param string $path           Path of the endpoint, for example `1/newFeature`. (required)
      * @param array  $parameters     Query parameters to apply to the current query. (optional)
      * @param array  $body           Parameters to send with the custom request. (optional)
      * @param array  $requestOptions the requestOptions to send along with the query, they will be merged with the transporter requestOptions
@@ -768,7 +793,7 @@ class SearchClient
     /**
      * This method lets you send requests to the Algolia REST API.
      *
-     * @param string $path           Path of the endpoint, anything after \"/1\" must be specified. (required)
+     * @param string $path           Path of the endpoint, for example `1/newFeature`. (required)
      * @param array  $parameters     Query parameters to apply to the current query. (optional)
      * @param array  $body           Parameters to send with the custom request. (optional)
      * @param array  $requestOptions the requestOptions to send along with the query, they will be merged with the transporter requestOptions
@@ -843,7 +868,7 @@ class SearchClient
     }
 
     /**
-     * This operation doesn't accept empty filters.  This operation is resource-intensive. You should only use it if you can't get the object IDs of the records you want to delete. It's more efficient to get a list of object IDs with the [`browse` operation](#tag/Search/operation/browse), and then delete the records using the [`batch` operation](#tag/Records/operation/batch).  This operation is subject to [indexing rate limits](https://support.algolia.com/hc/en-us/articles/4406975251089-Is-there-a-rate-limit-for-indexing-on-Algolia).
+     * This operation doesn't accept empty filters.  This operation is resource-intensive. You should only use it if you can't get the object IDs of the records you want to delete. It's more efficient to get a list of object IDs with the [`browse` operation](https://www.algolia.com/doc/rest-api/search/browse), and then delete the records using the [`batch` operation](https://www.algolia.com/doc/rest-api/search/batch).  This operation is subject to [indexing rate limits](https://support.algolia.com/hc/articles/4406975251089-Is-there-a-rate-limit-for-indexing-on-Algolia).
      *
      * Required API Key ACLs:
      *  - deleteIndex
@@ -851,7 +876,7 @@ class SearchClient
      * @param string               $indexName      Name of the index on which to perform the operation. (required)
      * @param array|DeleteByParams $deleteByParams deleteByParams (required)
      *                                             - $deleteByParams['facetFilters'] => (array)
-     *                                             - $deleteByParams['filters'] => (string) Filter expression to only include items that match the filter criteria in the response.  You can use these filter expressions:  - **Numeric filters.** `<facet> <op> <number>`, where `<op>` is one of `<`, `<=`, `=`, `!=`, `>`, `>=`. - **Ranges.** `<facet>:<lower> TO <upper>` where `<lower>` and `<upper>` are the lower and upper limits of the range (inclusive). - **Facet filters.** `<facet>:<value>` where `<facet>` is a facet attribute (case-sensitive) and `<value>` a facet value. - **Tag filters.** `_tags:<value>` or just `<value>` (case-sensitive). - **Boolean filters.** `<facet>: true | false`.  You can combine filters with `AND`, `OR`, and `NOT` operators with the following restrictions:  - You can only combine filters of the same type with `OR`.   **Not supported:** `facet:value OR num > 3`. - You can't use `NOT` with combinations of filters.   **Not supported:** `NOT(facet:value OR facet:value)` - You can't combine conjunctions (`AND`) with `OR`.   **Not supported:** `facet:value OR (facet:value AND facet:value)`  Use quotes around your filters, if the facet attribute name or facet value has spaces, keywords (`OR`, `AND`, `NOT`), or quotes. If a facet attribute is an array, the filter matches if it matches at least one element of the array.  For more information, see [Filters](https://www.algolia.com/doc/guides/managing-results/refine-results/filtering/).
+     *                                             - $deleteByParams['filters'] => (string) Filter expression to only include items that match the filter criteria in the response.  You can use these filter expressions:  - **Numeric filters.** `<facet> <op> <number>`, where `<op>` is one of `<`, `<=`, `=`, `!=`, `>`, `>=`. - **Ranges.** `<facet>:<lower> TO <upper>` where `<lower>` and `<upper>` are the lower and upper limits of the range (inclusive). - **Facet filters.** `<facet>:<value>` where `<facet>` is a facet attribute (case-sensitive) and `<value>` a facet value. - **Tag filters.** `_tags:<value>` or just `<value>` (case-sensitive). - **Boolean filters.** `<facet>: true | false`.  You can combine filters with `AND`, `OR`, and `NOT` operators with the following restrictions:  - You can only combine filters of the same type with `OR`.   **Not supported:** `facet:value OR num > 3`. - You can't use `NOT` with combinations of filters.   **Not supported:** `NOT(facet:value OR facet:value)` - You can't combine conjunctions (`AND`) with `OR`.   **Not supported:** `facet:value OR (facet:value AND facet:value)`  Use quotes around your filters, if the facet attribute name or facet value has spaces, keywords (`OR`, `AND`, `NOT`), or quotes. If a facet attribute is an array, the filter matches if it matches at least one element of the array.  For more information, see [Filters](https://www.algolia.com/doc/guides/managing-results/refine-results/filtering).
      *                                             - $deleteByParams['numericFilters'] => (array)
      *                                             - $deleteByParams['tagFilters'] => (array)
      *                                             - $deleteByParams['aroundLatLng'] => (string) Coordinates for the center of a circle, expressed as a comma-separated string of latitude and longitude.  Only records included within a circle around this central location are included in the results. The radius of the circle is determined by the `aroundRadius` and `minimumAroundRadius` settings. This parameter is ignored if you also specify `insidePolygon` or `insideBoundingBox`.
@@ -898,7 +923,7 @@ class SearchClient
     }
 
     /**
-     * Deletes an index and all its settings.  - Deleting an index doesn't delete its analytics data. - If you try to delete a non-existing index, the operation is ignored without warning. - If the index you want to delete has replica indices, the replicas become independent indices. - If the index you want to delete is a replica index, you must first unlink it from its primary index before you can delete it.   For more information, see [Delete replica indices](https://www.algolia.com/doc/guides/managing-results/refine-results/sorting/how-to/deleting-replicas/).
+     * Deletes an index and all its settings.  - Deleting an index doesn't delete its analytics data. - If you try to delete a non-existing index, the operation is ignored without warning. - If the index you want to delete has replica indices, the replicas become independent indices. - If the index you want to delete is a replica index, you must first unlink it from its primary index before you can delete it.   For more information, see [Delete replica indices](https://www.algolia.com/doc/guides/managing-results/refine-results/sorting/how-to/deleting-replicas).
      *
      * Required API Key ACLs:
      *  - deleteIndex
@@ -935,7 +960,7 @@ class SearchClient
     }
 
     /**
-     * Deletes a record by its object ID.  To delete more than one record, use the [`batch` operation](#tag/Records/operation/batch). To delete records matching a query, use the [`deleteBy` operation](#tag/Records/operation/deleteBy).
+     * Deletes a record by its object ID.  To delete more than one record, use the [`batch` operation](https://www.algolia.com/doc/rest-api/search/batch). To delete records matching a query, use the [`deleteBy` operation](https://www.algolia.com/doc/rest-api/search/delete-by).
      *
      * Required API Key ACLs:
      *  - deleteObject
@@ -988,7 +1013,7 @@ class SearchClient
     }
 
     /**
-     * Deletes a rule by its ID. To find the object ID for rules, use the [`search` operation](#tag/Rules/operation/searchRules).
+     * Deletes a rule by its ID. To find the object ID for rules, use the [`search` operation](https://www.algolia.com/doc/rest-api/search/search-rules).
      *
      * Required API Key ACLs:
      *  - editSettings
@@ -1083,7 +1108,7 @@ class SearchClient
     }
 
     /**
-     * Deletes a synonym by its ID. To find the object IDs of your synonyms, use the [`search` operation](#tag/Synonyms/operation/searchSynonyms).
+     * Deletes a synonym by its ID. To find the object IDs of your synonyms, use the [`search` operation](https://www.algolia.com/doc/rest-api/search/search-synonyms).
      *
      * Required API Key ACLs:
      *  - editSettings
@@ -1142,6 +1167,9 @@ class SearchClient
 
     /**
      * Gets the permissions and restrictions of an API key.  When authenticating with the admin API key, you can request information for any of your application's keys. When authenticating with other API keys, you can only retrieve information for that key, with the description replaced by `<redacted>`.
+     *
+     * Required API Key ACLs:
+     *  - search
      *
      * @param string $key            API key. (required)
      * @param array  $requestOptions the requestOptions to send along with the query, they will be merged with the transporter requestOptions
@@ -1252,7 +1280,7 @@ class SearchClient
     }
 
     /**
-     * The request must be authenticated by an API key with the [`logs` ACL](https://www.algolia.com/doc/guides/security/api-keys/#access-control-list-acl).  - Logs are held for the last seven days. - Up to 1,000 API requests per server are logged. - This request counts towards your [operations quota](https://support.algolia.com/hc/en-us/articles/4406981829777-How-does-Algolia-count-records-and-operations-) but doesn't appear in the logs itself.
+     * The request must be authenticated by an API key with the [`logs` ACL](https://www.algolia.com/doc/guides/security/api-keys/#access-control-list-acl).  - Logs are held for the last seven days. - Up to 1,000 API requests per server are logged. - This request counts towards your [operations quota](https://support.algolia.com/hc/articles/17245378392977-How-does-Algolia-count-records-and-operations) but doesn't appear in the logs itself.
      *
      * Required API Key ACLs:
      *  - logs
@@ -1292,7 +1320,7 @@ class SearchClient
     }
 
     /**
-     * Retrieves one record by its object ID.  To retrieve more than one record, use the [`objects` operation](#tag/Records/operation/getObjects).
+     * Retrieves one record by its object ID.  To retrieve more than one record, use the [`objects` operation](https://www.algolia.com/doc/rest-api/search/get-objects).
      *
      * Required API Key ACLs:
      *  - search
@@ -1382,7 +1410,7 @@ class SearchClient
     }
 
     /**
-     * Retrieves a rule by its ID. To find the object ID of rules, use the [`search` operation](#tag/Rules/operation/searchRules).
+     * Retrieves a rule by its ID. To find the object ID of rules, use the [`search` operation](https://www.algolia.com/doc/rest-api/search/search-rules).
      *
      * Required API Key ACLs:
      *  - settings
@@ -1438,14 +1466,15 @@ class SearchClient
      * Retrieves an object with non-null index settings.
      *
      * Required API Key ACLs:
-     *  - search
+     *  - settings
      *
      * @param string $indexName      Name of the index on which to perform the operation. (required)
+     * @param int    $getVersion     When set to 2, the endpoint will not include `synonyms` in the response. This parameter is here for backward compatibility. (optional, default to 1)
      * @param array  $requestOptions the requestOptions to send along with the query, they will be merged with the transporter requestOptions
      *
      * @return array<string, mixed>|SettingsResponse
      */
-    public function getSettings($indexName, $requestOptions = [])
+    public function getSettings($indexName, $getVersion = null, $requestOptions = [])
     {
         // verify the required parameter 'indexName' is set
         if (!isset($indexName)) {
@@ -1458,6 +1487,10 @@ class SearchClient
         $queryParameters = [];
         $headers = [];
         $httpBody = null;
+
+        if (null !== $getVersion) {
+            $queryParameters['getVersion'] = $getVersion;
+        }
 
         // path params
         if (null !== $indexName) {
@@ -1492,7 +1525,7 @@ class SearchClient
     }
 
     /**
-     * Retrieves a synonym by its ID. To find the object IDs for your synonyms, use the [`search` operation](#tag/Synonyms/operation/searchSynonyms).
+     * Retrieves a synonym by its ID. To find the object IDs for your synonyms, use the [`search` operation](https://www.algolia.com/doc/rest-api/search/search-synonyms).
      *
      * Required API Key ACLs:
      *  - settings
@@ -1790,7 +1823,10 @@ class SearchClient
     }
 
     /**
-     * Adds, updates, or deletes records in multiple indices with a single API request.  - Actions are applied in the order they are specified. - Actions are equivalent to the individual API requests of the same name.  This operation is subject to [indexing rate limits](https://support.algolia.com/hc/en-us/articles/4406975251089-Is-there-a-rate-limit-for-indexing-on-Algolia).
+     * Adds, updates, or deletes records in multiple indices with a single API request.  - Actions are applied in the order they are specified. - Actions are equivalent to the individual API requests of the same name.  This operation is subject to [indexing rate limits](https://support.algolia.com/hc/articles/4406975251089-Is-there-a-rate-limit-for-indexing-on-Algolia).
+     *
+     * Required API Key ACLs:
+     *  - addObject
      *
      * @param array|BatchParams $batchParams batchParams (required)
      *                                       - $batchParams['requests'] => (array)  (required)
@@ -1819,7 +1855,7 @@ class SearchClient
     }
 
     /**
-     * Copies or moves (renames) an index within the same Algolia application.  - Existing destination indices are overwritten, except for their analytics data. - If the destination index doesn't exist yet, it'll be created. - This operation is resource-intensive.  **Copy**  - Copying a source index that doesn't exist creates a new index with 0 records and default settings. - The API keys of the source index are merged with the existing keys in the destination index. - You can't copy the `enableReRanking`, `mode`, and `replicas` settings. - You can't copy to a destination index that already has replicas. - Be aware of the [size limits](https://www.algolia.com/doc/guides/scaling/algolia-service-limits/#application-record-and-index-limits). - Related guide: [Copy indices](https://www.algolia.com/doc/guides/sending-and-managing-data/manage-indices-and-apps/manage-indices/how-to/copy-indices/)  **Move**  - Moving a source index that doesn't exist is ignored without returning an error. - When moving an index, the analytics data keeps its original name, and a new set of analytics data is started for the new name.   To access the original analytics in the dashboard, create an index with the original name. - If the destination index has replicas, moving will overwrite the existing index and copy the data to the replica indices. - Related guide: [Move indices](https://www.algolia.com/doc/guides/sending-and-managing-data/manage-indices-and-apps/manage-indices/how-to/move-indices/).  This operation is subject to [indexing rate limits](https://support.algolia.com/hc/en-us/articles/4406975251089-Is-there-a-rate-limit-for-indexing-on-Algolia).
+     * Copies or moves (renames) an index within the same Algolia application.  - Existing destination indices are overwritten, except for their analytics data. - If the destination index doesn't exist yet, it'll be created. - This operation is resource-intensive.  **Copy**  - Copying a source index that doesn't exist creates a new index with 0 records and default settings. - The API keys of the source index are merged with the existing keys in the destination index. - You can't copy the `enableReRanking`, `mode`, and `replicas` settings. - You can't copy to a destination index that already has replicas. - Be aware of the [size limits](https://www.algolia.com/doc/guides/scaling/algolia-service-limits/#application-record-and-index-limits). - Related guide: [Copy indices](https://www.algolia.com/doc/guides/sending-and-managing-data/manage-indices-and-apps/manage-indices/how-to/copy-indices)  **Move**  - Moving a source index that doesn't exist is ignored without returning an error. - When moving an index, the analytics data keeps its original name, and a new set of analytics data is started for the new name.   To access the original analytics in the dashboard, create an index with the original name. - If the destination index has replicas, moving will overwrite the existing index and copy the data to the replica indices. - Related guide: [Move indices](https://www.algolia.com/doc/guides/sending-and-managing-data/manage-indices-and-apps/manage-indices/how-to/move-indices).  This operation is subject to [indexing rate limits](https://support.algolia.com/hc/articles/4406975251089-Is-there-a-rate-limit-for-indexing-on-Algolia).
      *
      * Required API Key ACLs:
      *  - addObject
@@ -1869,7 +1905,7 @@ class SearchClient
     }
 
     /**
-     * Adds new attributes to a record, or updates existing ones.  - If a record with the specified object ID doesn't exist,   a new record is added to the index **if** `createIfNotExists` is true. - If the index doesn't exist yet, this method creates a new index. - You can use any first-level attribute but not nested attributes.   If you specify a nested attribute, this operation replaces its first-level ancestor.  To update an attribute without pushing the entire record, you can use these built-in operations. These operations can be helpful if you don't have access to your initial data.  - Increment: increment a numeric attribute - Decrement: decrement a numeric attribute - Add: append a number or string element to an array attribute - Remove: remove all matching number or string elements from an array attribute made of numbers or strings - AddUnique: add a number or string element to an array attribute made of numbers or strings only if it's not already present - IncrementFrom: increment a numeric integer attribute only if the provided value matches the current value, and otherwise ignore the whole object update. For example, if you pass an IncrementFrom value of 2 for the version attribute, but the current value of the attribute is 1, the engine ignores the update. If the object doesn't exist, the engine only creates it if you pass an IncrementFrom value of 0. - IncrementSet: increment a numeric integer attribute only if the provided value is greater than the current value, and otherwise ignore the whole object update. For example, if you pass an IncrementSet value of 2 for the version attribute, and the current value of the attribute is 1, the engine updates the object. If the object doesn't exist yet, the engine only creates it if you pass an IncrementSet value greater than 0.  You can specify an operation by providing an object with the attribute to update as the key and its value being an object with the following properties:  - _operation: the operation to apply on the attribute - value: the right-hand side argument to the operation, for example, increment or decrement step, value to add or remove.  When updating multiple attributes or using multiple operations targeting the same record, you should use a single partial update for faster processing.  This operation is subject to [indexing rate limits](https://support.algolia.com/hc/en-us/articles/4406975251089-Is-there-a-rate-limit-for-indexing-on-Algolia).
+     * Adds new attributes to a record, or updates existing ones.  - If a record with the specified object ID doesn't exist,   a new record is added to the index **if** `createIfNotExists` is true. - If the index doesn't exist yet, this method creates a new index. - You can use any first-level attribute but not nested attributes.   If you specify a nested attribute, this operation replaces its first-level ancestor.  To update an attribute without pushing the entire record, you can use these built-in operations. These operations can be helpful if you don't have access to your initial data.  - Increment: increment a numeric attribute - Decrement: decrement a numeric attribute - Add: append a number or string element to an array attribute - Remove: remove all matching number or string elements from an array attribute made of numbers or strings - AddUnique: add a number or string element to an array attribute made of numbers or strings only if it's not already present - IncrementFrom: increment a numeric integer attribute only if the provided value matches the current value, and otherwise ignore the whole object update. For example, if you pass an IncrementFrom value of 2 for the version attribute, but the current value of the attribute is 1, the engine ignores the update. If the object doesn't exist, the engine only creates it if you pass an IncrementFrom value of 0. - IncrementSet: increment a numeric integer attribute only if the provided value is greater than the current value, and otherwise ignore the whole object update. For example, if you pass an IncrementSet value of 2 for the version attribute, and the current value of the attribute is 1, the engine updates the object. If the object doesn't exist yet, the engine only creates it if you pass an IncrementSet value greater than 0.  You can specify an operation by providing an object with the attribute to update as the key and its value being an object with the following properties:  - _operation: the operation to apply on the attribute - value: the right-hand side argument to the operation, for example, increment or decrement step, value to add or remove.  When updating multiple attributes or using multiple operations targeting the same record, you should use a single partial update for faster processing.  This operation is subject to [indexing rate limits](https://support.algolia.com/hc/articles/4406975251089-Is-there-a-rate-limit-for-indexing-on-Algolia).
      *
      * Required API Key ACLs:
      *  - addObject
@@ -2038,7 +2074,7 @@ class SearchClient
     }
 
     /**
-     * Adds a record to an index or replaces it.  - If the record doesn't have an object ID, a new record with an auto-generated object ID is added to your index. - If a record with the specified object ID exists, the existing record is replaced. - If a record with the specified object ID doesn't exist, a new record is added to your index. - If you add a record to an index that doesn't exist yet, a new index is created.  To update _some_ attributes of a record, use the [`partial` operation](#tag/Records/operation/partialUpdateObject). To add, update, or replace multiple records, use the [`batch` operation](#tag/Records/operation/batch).  This operation is subject to [indexing rate limits](https://support.algolia.com/hc/en-us/articles/4406975251089-Is-there-a-rate-limit-for-indexing-on-Algolia).
+     * Adds a record to an index or replaces it.  - If the record doesn't have an object ID, a new record with an auto-generated object ID is added to your index. - If a record with the specified object ID exists, the existing record is replaced. - If a record with the specified object ID doesn't exist, a new record is added to your index. - If you add a record to an index that doesn't exist yet, a new index is created.  To update _some_ attributes of a record, use the [`partial` operation](https://www.algolia.com/doc/rest-api/search/partial-update-object). To add, update, or replace multiple records, use the [`batch` operation](https://www.algolia.com/doc/rest-api/search/batch).  This operation is subject to [indexing rate limits](https://support.algolia.com/hc/articles/4406975251089-Is-there-a-rate-limit-for-indexing-on-Algolia).
      *
      * Required API Key ACLs:
      *  - addObject
@@ -2082,7 +2118,7 @@ class SearchClient
     }
 
     /**
-     * If a rule with the specified object ID doesn't exist, it's created. Otherwise, the existing rule is replaced.  To create or update more than one rule, use the [`batch` operation](#tag/Rules/operation/saveRules).
+     * If a rule with the specified object ID doesn't exist, it's created. Otherwise, the existing rule is replaced.  To create or update more than one rule, use the [`batch` operation](https://www.algolia.com/doc/rest-api/search/save-rules).
      *
      * Required API Key ACLs:
      *  - editSettings
@@ -2096,6 +2132,8 @@ class SearchClient
      *                              - $rule['description'] => (string) Description of the rule's purpose to help you distinguish between different rules.
      *                              - $rule['enabled'] => (bool) Whether the rule is active.
      *                              - $rule['validity'] => (array) Time periods when the rule is active.
+     *                              - $rule['tags'] => (array)
+     *                              - $rule['scope'] => (string)
      *
      * @see Rule
      *
@@ -2156,7 +2194,7 @@ class SearchClient
     }
 
     /**
-     * Create or update multiple rules.  If a rule with the specified object ID doesn't exist, Algolia creates a new one. Otherwise, existing rules are replaced.  This operation is subject to [indexing rate limits](https://support.algolia.com/hc/en-us/articles/4406975251089-Is-there-a-rate-limit-for-indexing-on-Algolia).
+     * Create or update multiple rules.  If a rule with the specified object ID doesn't exist, Algolia creates a new one. Otherwise, existing rules are replaced.  This operation is subject to [indexing rate limits](https://support.algolia.com/hc/articles/4406975251089-Is-there-a-rate-limit-for-indexing-on-Algolia).
      *
      * Required API Key ACLs:
      *  - editSettings
@@ -2210,7 +2248,7 @@ class SearchClient
     }
 
     /**
-     * If a synonym with the specified object ID doesn't exist, Algolia adds a new one. Otherwise, the existing synonym is replaced. To add multiple synonyms in a single API request, use the [`batch` operation](#tag/Synonyms/operation/saveSynonyms).
+     * If a synonym with the specified object ID doesn't exist, Algolia adds a new one. Otherwise, the existing synonym is replaced. To add multiple synonyms in a single API request, use the [`batch` operation](https://www.algolia.com/doc/rest-api/search/save-synonyms).
      *
      * Required API Key ACLs:
      *  - editSettings
@@ -2221,11 +2259,11 @@ class SearchClient
      *                                     - $synonymHit['objectID'] => (string) Unique identifier of a synonym object. (required)
      *                                     - $synonymHit['type'] => (array)  (required)
      *                                     - $synonymHit['synonyms'] => (array) Words or phrases considered equivalent.
-     *                                     - $synonymHit['input'] => (string) Word or phrase to appear in query strings (for [`onewaysynonym`s](https://www.algolia.com/doc/guides/managing-results/optimize-search-results/adding-synonyms/in-depth/one-way-synonyms/)).
-     *                                     - $synonymHit['word'] => (string) Word or phrase to appear in query strings (for [`altcorrection1` and `altcorrection2`](https://www.algolia.com/doc/guides/managing-results/optimize-search-results/adding-synonyms/in-depth/synonyms-alternative-corrections/)).
+     *                                     - $synonymHit['input'] => (string) Word or phrase to appear in query strings (for [`onewaysynonym`s](https://www.algolia.com/doc/guides/managing-results/optimize-search-results/adding-synonyms/in-depth/one-way-synonyms)).
+     *                                     - $synonymHit['word'] => (string) Word or phrase to appear in query strings (for [`altcorrection1` and `altcorrection2`](https://www.algolia.com/doc/guides/managing-results/optimize-search-results/adding-synonyms/in-depth/synonyms-alternative-corrections)).
      *                                     - $synonymHit['corrections'] => (array) Words to be matched in records.
-     *                                     - $synonymHit['placeholder'] => (string) [Placeholder token](https://www.algolia.com/doc/guides/managing-results/optimize-search-results/adding-synonyms/in-depth/synonyms-placeholders/) to be put inside records.
-     *                                     - $synonymHit['replacements'] => (array) Query words that will match the [placeholder token](https://www.algolia.com/doc/guides/managing-results/optimize-search-results/adding-synonyms/in-depth/synonyms-placeholders/).
+     *                                     - $synonymHit['placeholder'] => (string) [Placeholder token](https://www.algolia.com/doc/guides/managing-results/optimize-search-results/adding-synonyms/in-depth/synonyms-placeholders) to be put inside records.
+     *                                     - $synonymHit['replacements'] => (array) Query words that will match the [placeholder token](https://www.algolia.com/doc/guides/managing-results/optimize-search-results/adding-synonyms/in-depth/synonyms-placeholders).
      *
      * @see SynonymHit
      *
@@ -2286,7 +2324,7 @@ class SearchClient
     }
 
     /**
-     * If a synonym with the `objectID` doesn't exist, Algolia adds a new one. Otherwise, existing synonyms are replaced.  This operation is subject to [indexing rate limits](https://support.algolia.com/hc/en-us/articles/4406975251089-Is-there-a-rate-limit-for-indexing-on-Algolia).
+     * If a synonym with the `objectID` doesn't exist, Algolia adds a new one. Otherwise, existing synonyms are replaced.  This operation is subject to [indexing rate limits](https://support.algolia.com/hc/articles/4406975251089-Is-there-a-rate-limit-for-indexing-on-Algolia).
      *
      * Required API Key ACLs:
      *  - editSettings
@@ -2494,8 +2532,8 @@ class SearchClient
      *                                                   - $searchRulesParams['query'] => (string) Search query for rules.
      *                                                   - $searchRulesParams['anchoring'] => (array)
      *                                                   - $searchRulesParams['context'] => (string) Only return rules that match the context (exact match).
-     *                                                   - $searchRulesParams['page'] => (int) Requested page of the API response.  Algolia uses `page` and `hitsPerPage` to control how search results are displayed ([paginated](https://www.algolia.com/doc/guides/building-search-ui/ui-and-ux-patterns/pagination/js/)).  - `hitsPerPage`: sets the number of search results (_hits_) displayed per page. - `page`: specifies the page number of the search results you want to retrieve. Page numbering starts at 0, so the first page is `page=0`, the second is `page=1`, and so on.  For example, to display 10 results per page starting from the third page, set `hitsPerPage` to 10 and `page` to 2.
-     *                                                   - $searchRulesParams['hitsPerPage'] => (int) Maximum number of hits per page.  Algolia uses `page` and `hitsPerPage` to control how search results are displayed ([paginated](https://www.algolia.com/doc/guides/building-search-ui/ui-and-ux-patterns/pagination/js/)).  - `hitsPerPage`: sets the number of search results (_hits_) displayed per page. - `page`: specifies the page number of the search results you want to retrieve. Page numbering starts at 0, so the first page is `page=0`, the second is `page=1`, and so on.  For example, to display 10 results per page starting from the third page, set `hitsPerPage` to 10 and `page` to 2.
+     *                                                   - $searchRulesParams['page'] => (int) Requested page of the API response.  Algolia uses `page` and `hitsPerPage` to control how search results are displayed ([paginated](https://www.algolia.com/doc/guides/building-search-ui/ui-and-ux-patterns/pagination/js)).  - `hitsPerPage`: sets the number of search results (_hits_) displayed per page. - `page`: specifies the page number of the search results you want to retrieve. Page numbering starts at 0, so the first page is `page=0`, the second is `page=1`, and so on.  For example, to display 10 results per page starting from the third page, set `hitsPerPage` to 10 and `page` to 2.
+     *                                                   - $searchRulesParams['hitsPerPage'] => (int) Maximum number of hits per page.  Algolia uses `page` and `hitsPerPage` to control how search results are displayed ([paginated](https://www.algolia.com/doc/guides/building-search-ui/ui-and-ux-patterns/pagination/js)).  - `hitsPerPage`: sets the number of search results (_hits_) displayed per page. - `page`: specifies the page number of the search results you want to retrieve. Page numbering starts at 0, so the first page is `page=0`, the second is `page=1`, and so on.  For example, to display 10 results per page starting from the third page, set `hitsPerPage` to 10 and `page` to 2.
      *                                                   - $searchRulesParams['enabled'] => (bool) If `true`, return only enabled rules. If `false`, return only inactive rules. By default, _all_ rules are returned.
      *
      * @see SearchRulesParams
@@ -2531,7 +2569,7 @@ class SearchClient
     }
 
     /**
-     * Searches a single index and returns matching search results (_hits_).  This method lets you retrieve up to 1,000 hits. If you need more, use the [`browse` operation](#tag/Search/operation/browse) or increase the `paginatedLimitedTo` index setting.
+     * Searches a single index and returns matching search results as hits.  This method lets you retrieve up to 1,000 hits. If you need more, use the [`browse` operation](https://www.algolia.com/doc/rest-api/search/browse) or increase the `paginatedLimitedTo` index setting.
      *
      * Required API Key ACLs:
      *  - search
@@ -2623,7 +2661,7 @@ class SearchClient
      *  - admin
      *
      * @param array|SearchUserIdsParams $searchUserIdsParams searchUserIdsParams (required)
-     *                                                       - $searchUserIdsParams['query'] => (string) Query to search. The search is a prefix search with [typo tolerance](https://www.algolia.com/doc/guides/managing-results/optimize-search-results/typo-tolerance/) enabled. An empty query will retrieve all users. (required)
+     *                                                       - $searchUserIdsParams['query'] => (string)  (required)
      *                                                       - $searchUserIdsParams['clusterName'] => (string) Cluster name.
      *                                                       - $searchUserIdsParams['page'] => (int) Page of search results to retrieve.
      *                                                       - $searchUserIdsParams['hitsPerPage'] => (int) Number of hits per page.
@@ -2749,7 +2787,7 @@ class SearchClient
      *                             - $apiKey['description'] => (string) Description of an API key to help you identify this API key.
      *                             - $apiKey['indexes'] => (array) Index names or patterns that this API key can access. By default, an API key can access all indices in the same application.  You can use leading and trailing wildcard characters (`*`):  - `dev_*` matches all indices starting with \"dev_\". - `*_dev` matches all indices ending with \"_dev\". - `*_products_*` matches all indices containing \"_products_\".
      *                             - $apiKey['maxHitsPerQuery'] => (int) Maximum number of results this API key can retrieve in one query. By default, there's no limit.
-     *                             - $apiKey['maxQueriesPerIPPerHour'] => (int) Maximum number of API requests allowed per IP address or [user token](https://www.algolia.com/doc/guides/sending-events/concepts/usertoken/) per hour.  If this limit is reached, the API returns an error with status code `429`. By default, there's no limit.
+     *                             - $apiKey['maxQueriesPerIPPerHour'] => (int) Maximum number of API requests allowed per IP address or [user token](https://www.algolia.com/doc/guides/sending-events/concepts/usertoken) per hour.  If this limit is reached, the API returns an error with status code `429`. By default, there's no limit.
      *                             - $apiKey['queryParameters'] => (string) Query parameters to add when making API requests with this API key.  To restrict this API key to specific IP addresses, add the `restrictSources` parameter. You can only add a single source, but you can provide a range of IP addresses.  Creating an API key fails if the request is made from an IP address outside the restricted range.
      *                             - $apiKey['referers'] => (array) Allowed HTTP referrers for this API key.  By default, all referrers are allowed. You can use leading and trailing wildcard characters (`*`):  - `https://algolia.com/_*` allows all referrers starting with \"https://algolia.com/\" - `*.algolia.com` allows all referrers ending with \".algolia.com\" - `*algolia.com*` allows all referrers in the domain \"algolia.com\".  Like all HTTP headers, referrers can be spoofed. Don't rely on them to secure your data. For more information, see [HTTP referrer restrictions](https://www.algolia.com/doc/guides/security/security-best-practices/#http-referrers-restrictions).
      *                             - $apiKey['validity'] => (int) Duration (in seconds) after which the API key expires. By default, API keys don't expire.
@@ -2937,8 +2975,75 @@ class SearchClient
     }
 
     /**
+     * Helper: Similar to the `replaceAllObjects` method but requires a Push connector (https://www.algolia.com/doc/guides/sending-and-managing-data/send-and-update-your-data/connectors/push/) to be created first, in order to transform records before indexing them to Algolia. The `region` must have been passed to the client instantiation method.
+     *
+     * @param string $indexName      the `indexName` to replace `objects` in
+     * @param array  $objects        the array of `objects` to store in the given Algolia `indexName`
+     * @param array  $batchSize      The size of the chunk of `objects`. The number of `batch` calls will be equal to `length(objects) / batchSize`. Defaults to 1000.
+     * @param array  $requestOptions Request options
+     * @param mixed  $scopes
+     */
+    public function replaceAllObjectsWithTransformation($indexName, $objects, $batchSize = 1000, $scopes = ['settings', 'rules', 'synonyms'], $requestOptions = [])
+    {
+        if (null == $this->ingestionTransporter) {
+            throw new \InvalidArgumentException('`setTransformationRegion` must have been called before calling this method.');
+        }
+
+        $tmpIndexName = $indexName.'_tmp_'.rand(10000000, 99999999);
+
+        try {
+            $copyOperationResponse = $this->operationIndex(
+                $indexName,
+                [
+                    'operation' => 'copy',
+                    'destination' => $tmpIndexName,
+                    'scope' => $scopes,
+                ],
+                $requestOptions
+            );
+
+            $watchResponses = $this->ingestionTransporter->chunkedPush($tmpIndexName, $objects, 'addObject', true, $batchSize, $indexName, $requestOptions);
+
+            $this->waitForTask($tmpIndexName, $copyOperationResponse['taskID']);
+
+            $copyOperationResponse = $this->operationIndex(
+                $indexName,
+                [
+                    'operation' => 'copy',
+                    'destination' => $tmpIndexName,
+                    'scope' => $scopes,
+                ],
+                $requestOptions
+            );
+
+            $this->waitForTask($tmpIndexName, $copyOperationResponse['taskID']);
+
+            $moveOperationResponse = $this->operationIndex(
+                $tmpIndexName,
+                [
+                    'operation' => 'move',
+                    'destination' => $indexName,
+                ],
+                $requestOptions
+            );
+
+            $this->waitForTask($tmpIndexName, $moveOperationResponse['taskID']);
+
+            return [
+                'copyOperationResponse' => $copyOperationResponse,
+                'watchResponses' => $watchResponses,
+                'moveOperationResponse' => $moveOperationResponse,
+            ];
+        } catch (\Throwable $e) {
+            $this->deleteIndex($tmpIndexName);
+
+            throw $e;
+        }
+    }
+
+    /**
      * Helper: Replace all objects in an index using a temporary one.
-     * See https://api-clients-automation.netlify.app/docs/add-new-api-client#5-helpers for implementation details.
+     * See https://api-clients-automation.netlify.app/docs/custom-helpers/#replaceallobjects for implementation details.
      *
      * @param string $indexName      the `indexName` to replace `objects` in
      * @param array  $objects        the array of `objects` to store in the given Algolia `indexName`
@@ -3006,7 +3111,7 @@ class SearchClient
      * @param string $indexName      the `indexName` to replace `objects` in
      * @param array  $objects        the array of `objects` to store in the given Algolia `indexName`
      * @param bool   $waitForTasks   Whether or not we should wait until every `batch` tasks has been processed, this operation may slow the total execution time of this method but is more reliable
-     * @param array  $batchSize      The size of the chunk of `objects`. The number of `batch` calls will be equal to `length(objects) / batchSize`. Defaults to 1000.
+     * @param int    $batchSize      The size of the chunk of `objects`. The number of `batch` calls will be equal to `length(objects) / batchSize`. Defaults to 1000.
      * @param array  $requestOptions Request options
      */
     public function saveObjects($indexName, $objects, $waitForTasks = false, $batchSize = 1000, $requestOptions = [])
@@ -3015,12 +3120,33 @@ class SearchClient
     }
 
     /**
+     * Helper: Similar to the `saveObjects` method but requires a Push connector
+     * (https://www.algolia.com/doc/guides/sending-and-managing-data/send-and-update-your-data/connectors/push/)
+     * to be created first, in order to transform records before indexing them to Algolia. The
+     * `region` must have been passed to the client instantiation method.
+     *
+     * @param string $indexName      the `indexName` to replace `objects` in
+     * @param array  $objects        the array of `objects` to store in the given Algolia `indexName`
+     * @param bool   $waitForTasks   Whether or not we should wait until every `batch` tasks has been processed, this operation may slow the total execution time of this method but is more reliable
+     * @param int    $batchSize      The size of the chunk of `objects`. The number of `push` calls will be equal to `length(objects) / batchSize`. Defaults to 1000.
+     * @param array  $requestOptions Request options
+     */
+    public function saveObjectsWithTransformation($indexName, $objects, $waitForTasks = false, $batchSize = 1000, $requestOptions = [])
+    {
+        if (null == $this->ingestionTransporter) {
+            throw new \InvalidArgumentException('`setTransformationRegion` must have been called before calling this method.');
+        }
+
+        return $this->ingestionTransporter->chunkedPush($indexName, $objects, 'addObject', $waitForTasks, $batchSize, $requestOptions);
+    }
+
+    /**
      * Helper: Deletes every records for the given objectIDs. The `chunkedBatch` helper is used under the hood, which creates a `batch` requests with at most 1000 objectIDs in it.
      *
      * @param string $indexName      the `indexName` to delete `objectIDs` from
      * @param array  $objectIDs      the `objectIDs` to delete
      * @param bool   $waitForTasks   Whether or not we should wait until every `batch` tasks has been processed, this operation may slow the total execution time of this method but is more reliable
-     * @param array  $batchSize      The size of the chunk of `objects`. The number of `batch` calls will be equal to `length(objects) / batchSize`. Defaults to 1000.
+     * @param int    $batchSize      The size of the chunk of `objects`. The number of `batch` calls will be equal to `length(objects) / batchSize`. Defaults to 1000.
      * @param array  $requestOptions Request options
      */
     public function deleteObjects($indexName, $objectIDs, $waitForTasks = false, $batchSize = 1000, $requestOptions = [])
@@ -3039,14 +3165,36 @@ class SearchClient
      *
      * @param string $indexName         the `indexName` to replace `objects` in
      * @param array  $objects           the array of `objects` to store in the given Algolia `indexName`
-     * @param bool   $createIfNotExists To be provided if non-existing objects are passed, otherwise, the call will fail..
+     * @param bool   $createIfNotExists to be provided if non-existing objects are passed, otherwise, the call will fail
      * @param bool   $waitForTasks      Whether or not we should wait until every `batch` tasks has been processed, this operation may slow the total execution time of this method but is more reliable
-     * @param array  $batchSize         The size of the chunk of `objects`. The number of `batch` calls will be equal to `length(objects) / batchSize`. Defaults to 1000.
+     * @param int    $batchSize         The size of the chunk of `objects`. The number of `batch` calls will be equal to `length(objects) / batchSize`. Defaults to 1000.
      * @param array  $requestOptions    Request options
      */
     public function partialUpdateObjects($indexName, $objects, $createIfNotExists, $waitForTasks = false, $batchSize = 1000, $requestOptions = [])
     {
         return $this->chunkedBatch($indexName, $objects, (true == $createIfNotExists) ? 'partialUpdateObject' : 'partialUpdateObjectNoCreate', $waitForTasks, $batchSize, $requestOptions);
+    }
+
+    /**
+     * Helper: Similar to the `partialUpdateObjects` method but requires a Push connector
+     * (https://www.algolia.com/doc/guides/sending-and-managing-data/send-and-update-your-data/connectors/push/)
+     * to be created first, in order to transform records before indexing them to Algolia. The
+     * `region` must have been passed to the client instantiation method.
+     *
+     * @param string $indexName         the `indexName` to replace `objects` in
+     * @param array  $objects           the array of `objects` to store in the given Algolia `indexName`
+     * @param bool   $createIfNotExists to be provided if non-existing objects are passed, otherwise, the call will fail
+     * @param bool   $waitForTasks      Whether or not we should wait until every `batch` tasks has been processed, this operation may slow the total execution time of this method but is more reliable
+     * @param int    $batchSize         The size of the chunk of `objects`. The number of `push` calls will be equal to `length(objects) / batchSize`. Defaults to 1000.
+     * @param array  $requestOptions    Request options
+     */
+    public function partialUpdateObjectsWithTransformation($indexName, $objects, $createIfNotExists, $waitForTasks = false, $batchSize = 1000, $requestOptions = [])
+    {
+        if (null == $this->ingestionTransporter) {
+            throw new \InvalidArgumentException('`setTransformationRegion` must have been called before calling this method.');
+        }
+
+        return $this->ingestionTransporter->chunkedPush($indexName, $objects, (true == $createIfNotExists) ? 'partialUpdateObject' : 'partialUpdateObjectNoCreate', $waitForTasks, $batchSize, $requestOptions);
     }
 
     /**
@@ -3056,7 +3204,7 @@ class SearchClient
      * @param array  $objects        the array of `objects` to store in the given Algolia `indexName`
      * @param array  $action         the `batch` `action` to perform on the given array of `objects`, defaults to `addObject`
      * @param bool   $waitForTasks   whether or not we should wait until every `batch` tasks has been processed, this operation may slow the total execution time of this method but is more reliable
-     * @param array  $batchSize      The size of the chunk of `objects`. The number of `batch` calls will be equal to `length(objects) / batchSize`. Defaults to 1000.
+     * @param int    $batchSize      The size of the chunk of `objects`. The number of `batch` calls will be equal to `length(objects) / batchSize`. Defaults to 1000.
      * @param array  $requestOptions Request options
      */
     public function chunkedBatch(

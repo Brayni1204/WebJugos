@@ -27,12 +27,17 @@ use GuzzleHttp\Psr7\Query;
  */
 class RecommendClient
 {
-    public const VERSION = '4.19.0';
+    public const VERSION = '4.35.0';
 
     /**
      * @var ApiWrapperInterface
      */
     protected $api;
+
+    /**
+     * @var IngestionClient
+     */
+    protected $ingestionTransporter;
 
     /**
      * @var RecommendConfig
@@ -71,7 +76,9 @@ class RecommendClient
             self::getClusterHosts($config)
         );
 
-        return new static($apiWrapper, $config);
+        $client = new static($apiWrapper, $config);
+
+        return $client;
     }
 
     /**
@@ -172,7 +179,7 @@ class RecommendClient
     /**
      * This method lets you send requests to the Algolia REST API.
      *
-     * @param string $path           Path of the endpoint, anything after \"/1\" must be specified. (required)
+     * @param string $path           Path of the endpoint, for example `1/newFeature`. (required)
      * @param array  $parameters     Query parameters to apply to the current query. (optional)
      * @param array  $requestOptions the requestOptions to send along with the query, they will be merged with the transporter requestOptions
      *
@@ -211,7 +218,7 @@ class RecommendClient
     /**
      * This method lets you send requests to the Algolia REST API.
      *
-     * @param string $path           Path of the endpoint, anything after \"/1\" must be specified. (required)
+     * @param string $path           Path of the endpoint, for example `1/newFeature`. (required)
      * @param array  $parameters     Query parameters to apply to the current query. (optional)
      * @param array  $requestOptions the requestOptions to send along with the query, they will be merged with the transporter requestOptions
      *
@@ -250,7 +257,7 @@ class RecommendClient
     /**
      * This method lets you send requests to the Algolia REST API.
      *
-     * @param string $path           Path of the endpoint, anything after \"/1\" must be specified. (required)
+     * @param string $path           Path of the endpoint, for example `1/newFeature`. (required)
      * @param array  $parameters     Query parameters to apply to the current query. (optional)
      * @param array  $body           Parameters to send with the custom request. (optional)
      * @param array  $requestOptions the requestOptions to send along with the query, they will be merged with the transporter requestOptions
@@ -290,7 +297,7 @@ class RecommendClient
     /**
      * This method lets you send requests to the Algolia REST API.
      *
-     * @param string $path           Path of the endpoint, anything after \"/1\" must be specified. (required)
+     * @param string $path           Path of the endpoint, for example `1/newFeature`. (required)
      * @param array  $parameters     Query parameters to apply to the current query. (optional)
      * @param array  $body           Parameters to send with the custom request. (optional)
      * @param array  $requestOptions the requestOptions to send along with the query, they will be merged with the transporter requestOptions
@@ -577,8 +584,8 @@ class RecommendClient
      * @param array|SearchRecommendRulesParams $searchRecommendRulesParams searchRecommendRulesParams (optional)
      *                                                                     - $searchRecommendRulesParams['query'] => (string) Search query.
      *                                                                     - $searchRecommendRulesParams['context'] => (string) Only search for rules with matching context.
-     *                                                                     - $searchRecommendRulesParams['page'] => (int) Requested page of the API response.  Algolia uses `page` and `hitsPerPage` to control how search results are displayed ([paginated](https://www.algolia.com/doc/guides/building-search-ui/ui-and-ux-patterns/pagination/js/)).  - `hitsPerPage`: sets the number of search results (_hits_) displayed per page. - `page`: specifies the page number of the search results you want to retrieve. Page numbering starts at 0, so the first page is `page=0`, the second is `page=1`, and so on.  For example, to display 10 results per page starting from the third page, set `hitsPerPage` to 10 and `page` to 2.
-     *                                                                     - $searchRecommendRulesParams['hitsPerPage'] => (int) Maximum number of hits per page.  Algolia uses `page` and `hitsPerPage` to control how search results are displayed ([paginated](https://www.algolia.com/doc/guides/building-search-ui/ui-and-ux-patterns/pagination/js/)).  - `hitsPerPage`: sets the number of search results (_hits_) displayed per page. - `page`: specifies the page number of the search results you want to retrieve. Page numbering starts at 0, so the first page is `page=0`, the second is `page=1`, and so on.  For example, to display 10 results per page starting from the third page, set `hitsPerPage` to 10 and `page` to 2.
+     *                                                                     - $searchRecommendRulesParams['page'] => (int) Requested page of the API response.  Algolia uses `page` and `hitsPerPage` to control how search results are displayed ([paginated](https://www.algolia.com/doc/guides/building-search-ui/ui-and-ux-patterns/pagination/js)).  - `hitsPerPage`: sets the number of search results (_hits_) displayed per page. - `page`: specifies the page number of the search results you want to retrieve. Page numbering starts at 0, so the first page is `page=0`, the second is `page=1`, and so on.  For example, to display 10 results per page starting from the third page, set `hitsPerPage` to 10 and `page` to 2.
+     *                                                                     - $searchRecommendRulesParams['hitsPerPage'] => (int) Maximum number of hits per page.  Algolia uses `page` and `hitsPerPage` to control how search results are displayed ([paginated](https://www.algolia.com/doc/guides/building-search-ui/ui-and-ux-patterns/pagination/js)).  - `hitsPerPage`: sets the number of search results (_hits_) displayed per page. - `page`: specifies the page number of the search results you want to retrieve. Page numbering starts at 0, so the first page is `page=0`, the second is `page=1`, and so on.  For example, to display 10 results per page starting from the third page, set `hitsPerPage` to 10 and `page` to 2.
      *                                                                     - $searchRecommendRulesParams['enabled'] => (bool) Whether to only show rules where the value of their `enabled` property matches this parameter. If absent, show all rules, regardless of their `enabled` property.
      *                                                                     - $searchRecommendRulesParams['filters'] => (string) Filter expression. This only searches for rules matching the filter expression.
      *                                                                     - $searchRecommendRulesParams['facets'] => (array) Include facets and facet values in the response. Use `['*']` to include all facets.

@@ -52,7 +52,7 @@
                             <label>Imagen Actual:</label><br>
                             <div class="image-container">
                                 @if ($subtitulo->image)
-                                    <img id="preview_actual" src="{{ Storage::url($subtitulo->image->url) }}"
+                                    <img id="preview_actual" src="{{ $subtitulo->image->url }}"
                                         class="image-preview">
                                 @else
                                     <p><small>Sin imagen</small></p>

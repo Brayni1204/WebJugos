@@ -61,7 +61,7 @@
                                                 class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition duration-300 flex flex-col">
                                                 <!-- Imagen del producto -->
                                                 @if ($producto->image->isNotEmpty())
-                                                    <img src="{{ asset('storage/' . $producto->image->first()->url) }}"
+                                                    <img src="{{ $producto->image->first()->url }}"
                                                         alt="{{ $producto->nombre_producto }}"
                                                         class="w-full h-36 object-cover">
                                                 @else
@@ -95,7 +95,7 @@
 
                                                     @php
                                                         $imageUrl = $producto->image->isNotEmpty()
-                                                            ? asset('storage/' . $producto->image->first()->url)
+                                                            ? $producto->image->first()->url
                                                             : '';
                                                     @endphp
                                                     <div class="mt-auto flex justify-center">

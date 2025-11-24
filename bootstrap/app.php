@@ -12,7 +12,11 @@ return Application::configure(basePath: dirname(__DIR__))
         commands: __DIR__ . '/../routes/console.php',
         health: '/up',
         // Aquí es donde defines tus rutas personalizadas
-
+        then: function () {
+            Route::middleware('web')
+                ->prefix('admin')
+                ->group(base_path('routes/admin.php'));
+        },
     )
     ->withMiddleware(function (Middleware $middleware) {
         //

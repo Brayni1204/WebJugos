@@ -406,9 +406,6 @@ class SearchResult extends AbstractModel implements ModelInterface, \ArrayAccess
         if (!isset($this->container['exhaustiveFacetsCount']) || null === $this->container['exhaustiveFacetsCount']) {
             $invalidProperties[] = "'exhaustiveFacetsCount' can't be null";
         }
-        if (!isset($this->container['processingTimeMS']) || null === $this->container['processingTimeMS']) {
-            $invalidProperties[] = "'processingTimeMS' can't be null";
-        }
         if (!isset($this->container['hits']) || null === $this->container['hits']) {
             $invalidProperties[] = "'hits' can't be null";
         }
@@ -593,7 +590,7 @@ class SearchResult extends AbstractModel implements ModelInterface, \ArrayAccess
     /**
      * Sets exhaustiveFacetsCount.
      *
-     * @param bool $exhaustiveFacetsCount Whether the facet count is exhaustive (true) or approximate (false). For more information, see [Why are my facet and hit counts not accurate](https://support.algolia.com/hc/en-us/articles/4406975248145-Why-are-my-facet-and-hit-counts-not-accurate-).
+     * @param bool $exhaustiveFacetsCount Whether the facet count is exhaustive (true) or approximate (false). For more information, see [Why are my facet and hit counts not accurate](https://support.algolia.com/hc/articles/4406975248145-Why-are-my-facet-and-hit-counts-not-accurate).
      *
      * @return self
      */
@@ -831,7 +828,7 @@ class SearchResult extends AbstractModel implements ModelInterface, \ArrayAccess
     /**
      * Gets processingTimeMS.
      *
-     * @return int
+     * @return null|int
      */
     public function getProcessingTimeMS()
     {
@@ -841,7 +838,7 @@ class SearchResult extends AbstractModel implements ModelInterface, \ArrayAccess
     /**
      * Sets processingTimeMS.
      *
-     * @param int $processingTimeMS time the server took to process the request, in milliseconds
+     * @param null|int $processingTimeMS time the server took to process the request, in milliseconds
      *
      * @return self
      */
@@ -1033,7 +1030,7 @@ class SearchResult extends AbstractModel implements ModelInterface, \ArrayAccess
     /**
      * Sets queryID.
      *
-     * @param null|string $queryID Unique identifier for the query. This is used for [click analytics](https://www.algolia.com/doc/guides/analytics/click-analytics/).
+     * @param null|string $queryID Unique identifier for the query. This is used for [click analytics](https://www.algolia.com/doc/guides/analytics/click-analytics).
      *
      * @return self
      */

@@ -16,7 +16,7 @@
             <!-- 🟡 Logo y Nombre -->
             <div class="text-center mb-8">
                 @if ($info->favicon_url)
-                    <img src="{{ asset('storage/' . $info->favicon_url) }}" alt="Logo de {{ $info->nombre }}"
+                    <img src="{{ $info->favicon_url }}" alt="Logo de {{ $info->nombre }}"
                         class="h-24 mx-auto mb-3">
                 @endif
                 <h1 class="text-3xl font-bold text-gray-900">{{ $info->nombre }}</h1>

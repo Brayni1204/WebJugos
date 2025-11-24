@@ -57,7 +57,7 @@
                             <td>{{ $categorium->id }}</td>
                             <td>
                                 @if ($categorium->image && $categorium->image->count())
-                                    <img src="{{ Storage::url($categorium->image->first()->url) }}" alt="Img"
+                                    <img src="{{ $categorium->image->first()->url }}" alt="Imagen de {{ $categorium->nombre_categoria }}"
                                         width="50">
                                 @else
                                     <small>Sin imagen</small>

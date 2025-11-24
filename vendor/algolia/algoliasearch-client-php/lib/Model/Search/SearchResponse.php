@@ -395,9 +395,6 @@ class SearchResponse extends AbstractModel implements ModelInterface, \ArrayAcce
     {
         $invalidProperties = [];
 
-        if (!isset($this->container['processingTimeMS']) || null === $this->container['processingTimeMS']) {
-            $invalidProperties[] = "'processingTimeMS' can't be null";
-        }
         if (!isset($this->container['hits']) || null === $this->container['hits']) {
             $invalidProperties[] = "'hits' can't be null";
         }
@@ -821,7 +818,7 @@ class SearchResponse extends AbstractModel implements ModelInterface, \ArrayAcce
     /**
      * Gets processingTimeMS.
      *
-     * @return int
+     * @return null|int
      */
     public function getProcessingTimeMS()
     {
@@ -831,7 +828,7 @@ class SearchResponse extends AbstractModel implements ModelInterface, \ArrayAcce
     /**
      * Sets processingTimeMS.
      *
-     * @param int $processingTimeMS time the server took to process the request, in milliseconds
+     * @param null|int $processingTimeMS time the server took to process the request, in milliseconds
      *
      * @return self
      */
@@ -1023,7 +1020,7 @@ class SearchResponse extends AbstractModel implements ModelInterface, \ArrayAcce
     /**
      * Sets queryID.
      *
-     * @param null|string $queryID Unique identifier for the query. This is used for [click analytics](https://www.algolia.com/doc/guides/analytics/click-analytics/).
+     * @param null|string $queryID Unique identifier for the query. This is used for [click analytics](https://www.algolia.com/doc/guides/analytics/click-analytics).
      *
      * @return self
      */

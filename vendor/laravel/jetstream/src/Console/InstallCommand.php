@@ -150,7 +150,7 @@ class InstallCommand extends Command implements PromptsForMissingInput
     protected function installLivewireStack()
     {
         // Install Livewire...
-        if (! $this->requireComposerPackages('livewire/livewire:^3.0')) {
+        if (! $this->requireComposerPackages('livewire/livewire:^3.6.4')) {
             return false;
         }
 
@@ -609,13 +609,19 @@ EOF;
             ->whenNotEmpty(function ($names) use ($bootstrapApp, $group, $modifier) {
                 $names = $names->map(fn ($name) => "$name")->implode(','.PHP_EOL.'            ');
 
-                $bootstrapApp = str_replace(
+                $stubs = [
                     '->withMiddleware(function (Middleware $middleware) {',
-                    '->withMiddleware(function (Middleware $middleware) {'
+                    '->withMiddleware(function (Middleware $middleware): void {',
+                ];
+
+                $bootstrapApp = str_replace(
+                    $stubs,
+                    collect($stubs)->transform(fn ($stub) => $stub
                         .PHP_EOL."        \$middleware->$group($modifier: ["
                         .PHP_EOL."            $names,"
                         .PHP_EOL.'        ]);'
-                        .PHP_EOL,
+                        .PHP_EOL
+                    )->all(),
                     $bootstrapApp,
                 );
 

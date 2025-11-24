@@ -26,6 +26,7 @@ class Params extends AbstractModel implements ModelInterface, \ArrayAccess, \Jso
         'getRankingInfo' => 'bool',
         'relevancyStrictness' => 'int',
         'facetFilters' => '\Algolia\AlgoliaSearch\Model\Composition\FacetFilters',
+        'facets' => 'string[]',
         'optionalFilters' => '\Algolia\AlgoliaSearch\Model\Composition\OptionalFilters',
         'numericFilters' => '\Algolia\AlgoliaSearch\Model\Composition\NumericFilters',
         'hitsPerPage' => 'int',
@@ -46,6 +47,7 @@ class Params extends AbstractModel implements ModelInterface, \ArrayAccess, \Jso
         'analyticsTags' => 'string[]',
         'enableABTest' => 'bool',
         'enableReRanking' => 'bool',
+        'injectedItems' => 'array<string,\Algolia\AlgoliaSearch\Model\Composition\ExternalInjectedItem>',
     ];
 
     /**
@@ -60,6 +62,7 @@ class Params extends AbstractModel implements ModelInterface, \ArrayAccess, \Jso
         'getRankingInfo' => null,
         'relevancyStrictness' => null,
         'facetFilters' => null,
+        'facets' => null,
         'optionalFilters' => null,
         'numericFilters' => null,
         'hitsPerPage' => null,
@@ -80,6 +83,7 @@ class Params extends AbstractModel implements ModelInterface, \ArrayAccess, \Jso
         'analyticsTags' => null,
         'enableABTest' => null,
         'enableReRanking' => null,
+        'injectedItems' => null,
     ];
 
     /**
@@ -95,6 +99,7 @@ class Params extends AbstractModel implements ModelInterface, \ArrayAccess, \Jso
         'getRankingInfo' => 'getRankingInfo',
         'relevancyStrictness' => 'relevancyStrictness',
         'facetFilters' => 'facetFilters',
+        'facets' => 'facets',
         'optionalFilters' => 'optionalFilters',
         'numericFilters' => 'numericFilters',
         'hitsPerPage' => 'hitsPerPage',
@@ -115,6 +120,7 @@ class Params extends AbstractModel implements ModelInterface, \ArrayAccess, \Jso
         'analyticsTags' => 'analyticsTags',
         'enableABTest' => 'enableABTest',
         'enableReRanking' => 'enableReRanking',
+        'injectedItems' => 'injectedItems',
     ];
 
     /**
@@ -129,6 +135,7 @@ class Params extends AbstractModel implements ModelInterface, \ArrayAccess, \Jso
         'getRankingInfo' => 'setGetRankingInfo',
         'relevancyStrictness' => 'setRelevancyStrictness',
         'facetFilters' => 'setFacetFilters',
+        'facets' => 'setFacets',
         'optionalFilters' => 'setOptionalFilters',
         'numericFilters' => 'setNumericFilters',
         'hitsPerPage' => 'setHitsPerPage',
@@ -149,6 +156,7 @@ class Params extends AbstractModel implements ModelInterface, \ArrayAccess, \Jso
         'analyticsTags' => 'setAnalyticsTags',
         'enableABTest' => 'setEnableABTest',
         'enableReRanking' => 'setEnableReRanking',
+        'injectedItems' => 'setInjectedItems',
     ];
 
     /**
@@ -163,6 +171,7 @@ class Params extends AbstractModel implements ModelInterface, \ArrayAccess, \Jso
         'getRankingInfo' => 'getGetRankingInfo',
         'relevancyStrictness' => 'getRelevancyStrictness',
         'facetFilters' => 'getFacetFilters',
+        'facets' => 'getFacets',
         'optionalFilters' => 'getOptionalFilters',
         'numericFilters' => 'getNumericFilters',
         'hitsPerPage' => 'getHitsPerPage',
@@ -183,6 +192,7 @@ class Params extends AbstractModel implements ModelInterface, \ArrayAccess, \Jso
         'analyticsTags' => 'getAnalyticsTags',
         'enableABTest' => 'getEnableABTest',
         'enableReRanking' => 'getEnableReRanking',
+        'injectedItems' => 'getInjectedItems',
     ];
 
     /**
@@ -216,6 +226,9 @@ class Params extends AbstractModel implements ModelInterface, \ArrayAccess, \Jso
         }
         if (isset($data['facetFilters'])) {
             $this->container['facetFilters'] = $data['facetFilters'];
+        }
+        if (isset($data['facets'])) {
+            $this->container['facets'] = $data['facets'];
         }
         if (isset($data['optionalFilters'])) {
             $this->container['optionalFilters'] = $data['optionalFilters'];
@@ -276,6 +289,9 @@ class Params extends AbstractModel implements ModelInterface, \ArrayAccess, \Jso
         }
         if (isset($data['enableReRanking'])) {
             $this->container['enableReRanking'] = $data['enableReRanking'];
+        }
+        if (isset($data['injectedItems'])) {
+            $this->container['injectedItems'] = $data['injectedItems'];
         }
     }
 
@@ -388,7 +404,7 @@ class Params extends AbstractModel implements ModelInterface, \ArrayAccess, \Jso
     /**
      * Sets filters.
      *
-     * @param null|string $filters Filter expression to only include items that match the filter criteria in the response.  You can use these filter expressions:  - **Numeric filters.** `<facet> <op> <number>`, where `<op>` is one of `<`, `<=`, `=`, `!=`, `>`, `>=`. - **Ranges.** `<facet>:<lower> TO <upper>` where `<lower>` and `<upper>` are the lower and upper limits of the range (inclusive). - **Facet filters.** `<facet>:<value>` where `<facet>` is a facet attribute (case-sensitive) and `<value>` a facet value. - **Tag filters.** `_tags:<value>` or just `<value>` (case-sensitive). - **Boolean filters.** `<facet>: true | false`.  You can combine filters with `AND`, `OR`, and `NOT` operators with the following restrictions:  - You can only combine filters of the same type with `OR`.   **Not supported:** `facet:value OR num > 3`. - You can't use `NOT` with combinations of filters.   **Not supported:** `NOT(facet:value OR facet:value)` - You can't combine conjunctions (`AND`) with `OR`.   **Not supported:** `facet:value OR (facet:value AND facet:value)`  Use quotes around your filters, if the facet attribute name or facet value has spaces, keywords (`OR`, `AND`, `NOT`), or quotes. If a facet attribute is an array, the filter matches if it matches at least one element of the array.  For more information, see [Filters](https://www.algolia.com/doc/guides/managing-results/refine-results/filtering/).
+     * @param null|string $filters Filter expression to only include items that match the filter criteria in the response.  You can use these filter expressions:  - **Numeric filters.** `<facet> <op> <number>`, where `<op>` is one of `<`, `<=`, `=`, `!=`, `>`, `>=`. - **Ranges.** `<facet>:<lower> TO <upper>` where `<lower>` and `<upper>` are the lower and upper limits of the range (inclusive). - **Facet filters.** `<facet>:<value>` where `<facet>` is a facet attribute (case-sensitive) and `<value>` a facet value. - **Tag filters.** `_tags:<value>` or just `<value>` (case-sensitive). - **Boolean filters.** `<facet>: true | false`.  You can combine filters with `AND`, `OR`, and `NOT` operators with the following restrictions:  - You can only combine filters of the same type with `OR`.   **Not supported:** `facet:value OR num > 3`. - You can't use `NOT` with combinations of filters.   **Not supported:** `NOT(facet:value OR facet:value)` - You can't combine conjunctions (`AND`) with `OR`.   **Not supported:** `facet:value OR (facet:value AND facet:value)`  Use quotes around your filters, if the facet attribute name or facet value has spaces, keywords (`OR`, `AND`, `NOT`), or quotes. If a facet attribute is an array, the filter matches if it matches at least one element of the array.  For more information, see [Filters](https://www.algolia.com/doc/guides/managing-results/refine-results/filtering).
      *
      * @return self
      */
@@ -436,7 +452,7 @@ class Params extends AbstractModel implements ModelInterface, \ArrayAccess, \Jso
     /**
      * Sets getRankingInfo.
      *
-     * @param null|bool $getRankingInfo whether the search response should include detailed ranking information
+     * @param null|bool $getRankingInfo whether the run response should include detailed ranking information
      *
      * @return self
      */
@@ -460,7 +476,7 @@ class Params extends AbstractModel implements ModelInterface, \ArrayAccess, \Jso
     /**
      * Sets relevancyStrictness.
      *
-     * @param null|int $relevancyStrictness relevancyStrictness
+     * @param null|int $relevancyStrictness Relevancy threshold below which less relevant results aren't included in the results You can only set `relevancyStrictness` on [virtual replica indices](https://www.algolia.com/doc/guides/managing-results/refine-results/sorting/in-depth/replicas/#what-are-virtual-replicas). Use this setting to strike a balance between the relevance and number of returned results.
      *
      * @return self
      */
@@ -491,6 +507,30 @@ class Params extends AbstractModel implements ModelInterface, \ArrayAccess, \Jso
     public function setFacetFilters($facetFilters)
     {
         $this->container['facetFilters'] = $facetFilters;
+
+        return $this;
+    }
+
+    /**
+     * Gets facets.
+     *
+     * @return null|string[]
+     */
+    public function getFacets()
+    {
+        return $this->container['facets'] ?? null;
+    }
+
+    /**
+     * Sets facets.
+     *
+     * @param null|string[] $facets Facets for which to retrieve facet values that match the search criteria and the number of matching facet values To retrieve all facets, use the wildcard character `*`. To retrieve disjunctive facets lists, annotate any facets with the `disjunctive` modifier. For more information, see [facets](https://www.algolia.com/doc/guides/managing-results/refine-results/faceting/#contextual-facet-values-and-counts) and [disjunctive faceting for Smart Groups](https://www.algolia.com/doc/guides/managing-results/compositions/search-based-groups#facets-including-disjunctive-faceting).
+     *
+     * @return self
+     */
+    public function setFacets($facets)
+    {
+        $this->container['facets'] = $facets;
 
         return $this;
     }
@@ -748,7 +788,7 @@ class Params extends AbstractModel implements ModelInterface, \ArrayAccess, \Jso
     /**
      * Sets queryLanguages.
      *
-     * @param null|SupportedLanguage[] $queryLanguages Languages for language-specific query processing steps such as plurals, stop-word removal, and word-detection dictionaries.  This setting sets a default list of languages used by the `removeStopWords` and `ignorePlurals` settings. This setting also sets a dictionary for word detection in the logogram-based [CJK](https://www.algolia.com/doc/guides/managing-results/optimize-search-results/handling-natural-languages-nlp/in-depth/normalization/#normalization-for-logogram-based-languages-cjk) languages. To support this, you must place the CJK language **first**.  **You should always specify a query language.** If you don't specify an indexing language, the search engine uses all [supported languages](https://www.algolia.com/doc/guides/managing-results/optimize-search-results/handling-natural-languages-nlp/in-depth/supported-languages/), or the languages you specified with the `ignorePlurals` or `removeStopWords` parameters. This can lead to unexpected search results. For more information, see [Language-specific configuration](https://www.algolia.com/doc/guides/managing-results/optimize-search-results/handling-natural-languages-nlp/in-depth/language-specific-configurations/).
+     * @param null|SupportedLanguage[] $queryLanguages Languages for language-specific query processing steps such as plurals, stop-word removal, and word-detection dictionaries  This setting sets a default list of languages used by the `removeStopWords` and `ignorePlurals` settings. This setting also sets a dictionary for word detection in the logogram-based [CJK](https://www.algolia.com/doc/guides/managing-results/optimize-search-results/handling-natural-languages-nlp/in-depth/normalization/#normalization-for-logogram-based-languages-cjk) languages. To support this, you must place the CJK language **first**  **You should always specify a query language.** If you don't specify an indexing language, the search engine uses all [supported languages](https://www.algolia.com/doc/guides/managing-results/optimize-search-results/handling-natural-languages-nlp/in-depth/supported-languages), or the languages you specified with the `ignorePlurals` or `removeStopWords` parameters. This can lead to unexpected search results. For more information, see [Language-specific configuration](https://www.algolia.com/doc/guides/managing-results/optimize-search-results/handling-natural-languages-nlp/in-depth/language-specific-configurations).
      *
      * @return self
      */
@@ -772,7 +812,7 @@ class Params extends AbstractModel implements ModelInterface, \ArrayAccess, \Jso
     /**
      * Sets naturalLanguages.
      *
-     * @param null|SupportedLanguage[] $naturalLanguages ISO language codes that adjust settings that are useful for processing natural language queries (as opposed to keyword searches):  - Sets `removeStopWords` and `ignorePlurals` to the list of provided languages. - Sets `removeWordsIfNoResults` to `allOptional`. - Adds a `natural_language` attribute to `ruleContexts` and `analyticsTags`.
+     * @param null|SupportedLanguage[] $naturalLanguages ISO language codes that adjust settings that are useful for processing natural language queries (as opposed to keyword searches) - Sets `removeStopWords` and `ignorePlurals` to the list of provided languages. - Sets `removeWordsIfNoResults` to `allOptional`. - Adds a `natural_language` attribute to `ruleContexts` and `analyticsTags`.
      *
      * @return self
      */
@@ -796,7 +836,7 @@ class Params extends AbstractModel implements ModelInterface, \ArrayAccess, \Jso
     /**
      * Sets enableRules.
      *
-     * @param null|bool $enableRules whether to enable rules
+     * @param null|bool $enableRules whether to enable composition rules
      *
      * @return self
      */
@@ -820,7 +860,7 @@ class Params extends AbstractModel implements ModelInterface, \ArrayAccess, \Jso
     /**
      * Sets ruleContexts.
      *
-     * @param null|string[] $ruleContexts Assigns a rule context to the search query.  [Rule contexts](https://www.algolia.com/doc/guides/managing-results/rules/rules-overview/how-to/customize-search-results-by-platform/#whats-a-context) are strings that you can use to trigger matching rules.
+     * @param null|string[] $ruleContexts Assigns a rule context to the run query [Rule contexts](https://www.algolia.com/doc/guides/managing-results/rules/rules-overview/how-to/customize-search-results-by-platform/#whats-a-context) are strings that you can use to trigger matching rules.
      *
      * @return self
      */
@@ -844,7 +884,7 @@ class Params extends AbstractModel implements ModelInterface, \ArrayAccess, \Jso
     /**
      * Sets userToken.
      *
-     * @param null|string $userToken Unique pseudonymous or anonymous user identifier.  This helps with analytics and click and conversion events. For more information, see [user token](https://www.algolia.com/doc/guides/sending-events/concepts/usertoken/).
+     * @param null|string $userToken Unique pseudonymous or anonymous user identifier.  This helps with analytics and click and conversion events. For more information, see [user token](https://www.algolia.com/doc/guides/sending-events/concepts/usertoken).
      *
      * @return self
      */
@@ -868,7 +908,7 @@ class Params extends AbstractModel implements ModelInterface, \ArrayAccess, \Jso
     /**
      * Sets clickAnalytics.
      *
-     * @param null|bool $clickAnalytics Whether to include a `queryID` attribute in the response.  The query ID is a unique identifier for a search query and is required for tracking [click and conversion events](https://www.algolia.com/guides/sending-events/getting-started/).
+     * @param null|bool $clickAnalytics Whether to include a `queryID` attribute in the response The query ID is a unique identifier for a search query and is required for tracking [click and conversion events](https://www.algolia.com/doc/guides/sending-events/getting-started).
      *
      * @return self
      */
@@ -916,7 +956,7 @@ class Params extends AbstractModel implements ModelInterface, \ArrayAccess, \Jso
     /**
      * Sets analyticsTags.
      *
-     * @param null|string[] $analyticsTags Tags to apply to the query for [segmenting analytics data](https://www.algolia.com/doc/guides/search-analytics/guides/segments/).
+     * @param null|string[] $analyticsTags Tags to apply to the query for [segmenting analytics data](https://www.algolia.com/doc/guides/search-analytics/guides/segments).
      *
      * @return self
      */
@@ -940,7 +980,7 @@ class Params extends AbstractModel implements ModelInterface, \ArrayAccess, \Jso
     /**
      * Sets enableABTest.
      *
-     * @param null|bool $enableABTest whether to enable A/B testing for this search
+     * @param null|bool $enableABTest Whether to enable index level A/B testing for this run request. If the composition mixes multiple indices, the A/B test is ignored.
      *
      * @return self
      */
@@ -964,13 +1004,37 @@ class Params extends AbstractModel implements ModelInterface, \ArrayAccess, \Jso
     /**
      * Sets enableReRanking.
      *
-     * @param null|bool $enableReRanking Whether this search will use [Dynamic Re-Ranking](https://www.algolia.com/doc/guides/algolia-ai/re-ranking/).  This setting only has an effect if you activated Dynamic Re-Ranking for this index in the Algolia dashboard.
+     * @param null|bool $enableReRanking Whether this search will use [Dynamic Re-Ranking](https://www.algolia.com/doc/guides/algolia-ai/re-ranking) This setting only has an effect if you activated Dynamic Re-Ranking for this index in the Algolia dashboard.
      *
      * @return self
      */
     public function setEnableReRanking($enableReRanking)
     {
         $this->container['enableReRanking'] = $enableReRanking;
+
+        return $this;
+    }
+
+    /**
+     * Gets injectedItems.
+     *
+     * @return null|array<string,ExternalInjectedItem>
+     */
+    public function getInjectedItems()
+    {
+        return $this->container['injectedItems'] ?? null;
+    }
+
+    /**
+     * Sets injectedItems.
+     *
+     * @param null|array<string,ExternalInjectedItem> $injectedItems a list of extenrally injected objectID groups into from an external source
+     *
+     * @return self
+     */
+    public function setInjectedItems($injectedItems)
+    {
+        $this->container['injectedItems'] = $injectedItems;
 
         return $this;
     }

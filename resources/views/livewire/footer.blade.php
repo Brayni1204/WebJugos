@@ -8,7 +8,7 @@
                         $ultimaImagen = $empresa->first()->image_m()->latest()->first();
                     @endphp
                     @if ($ultimaImagen)
-                        <img class="h-12 w-auto" src="{{ asset('storage/' . $ultimaImagen->url) }}" alt="Logo">
+                        <img class="h-12 w-auto" src="{{ $ultimaImagen->url }}" alt="Logo">
                     @else
                         <img class="h-8 w-auto"
                             src="https://tailwindui.com/plus/img/logos/mark.svg?color=indigo&shade=500"

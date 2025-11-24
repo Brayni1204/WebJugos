@@ -7,9 +7,11 @@ use App\Models\Pagina;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use App\Http\Traits\ImageUploadTrait;
 
 class PaginaController extends Controller
 {
+    use ImageUploadTrait;
 
     public function index()
     {
@@ -33,18 +35,8 @@ class PaginaController extends Controller
 
         DB::beginTransaction();
         try {
-            // Crear la página
-            $pagina = Pagina::create([
-                'titulo_paginas' => $request->titulo_paginas,
-                'slug' => $request->slug,
-                'resumen' => $request->resumen,
-            ]);
-
-            // Guardar imagen si el usuario sube una
-            if ($request->hasFile('imagen')) {
-                $url = $request->file('imagen')->store('Pagina', 'public');
-                $pagina->image_pagina()->create(['url' => $url]);
-            }
+            $pagina = Pagina::create($request->only(['titulo_paginas', 'slug', 'resumen']));
+            $this->storeImage($request, $pagina, 'imagen', 'Pagina');
 
             DB::commit();
             return redirect()->route('admin.paginas.show', $pagina)->with('info', 'Página creada correctamente.');
@@ -82,14 +74,8 @@ class PaginaController extends Controller
         DB::beginTransaction();
         try {
             $pagina->update($request->only(['titulo_paginas', 'slug', 'resumen']));
-            if ($request->hasFile('imagen')) {
-                if ($pagina->image_pagina) {
-                    Storage::disk('public')->delete($pagina->image_pagina->url);
-                    $pagina->image_pagina()->delete();
-                }
-                $url = $request->file('imagen')->store('Pagina', 'public');
-                $pagina->image_pagina()->create(['url' => $url]);
-            }
+            $this->updateImage($request, $pagina, 'imagen', 'Pagina');
+
             DB::commit();
             return redirect()->route('admin.paginas.show', $pagina)
                 ->with('info', 'Página actualizada correctamente.');
@@ -101,15 +87,43 @@ class PaginaController extends Controller
 
     public function destroy(Pagina $pagina)
     {
-        // Eliminar imagen si existe
-        if ($pagina->image_pagina) {
-            Storage::disk('public')->delete($pagina->image_pagina->url);
-            $pagina->image_pagina()->delete();
+        DB::beginTransaction();
+        try {
+            if ($pagina->image_pagina) {
+                $publicId = $this->extractPublicId($pagina->image_pagina->getRawOriginal('url'));
+                if ($publicId) {
+                    \CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary::uploadApi()->destroy($publicId);
+                }
+                $pagina->image_pagina()->delete();
+            }
+
+            $pagina->delete();
+            DB::commit();
+            return response()->json(['success' => 'Página eliminada correctamente.']);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json(['error' => 'Error al eliminar la página.'], 500);
+        }
+    }
+
+    private function extractPublicId($url)
+    {
+        if (!$url) {
+            return null;
+        }
+        $parts = parse_url($url);
+        if (!isset($parts['path'])) {
+            return null;
+        }
+        $path = $parts['path'];
+
+        if (preg_match('/\/upload\/(?:v\d+\/)?(.+)/', $path, $matches)) {
+            $publicId = $matches[1];
+            // Remove file extension
+            $publicId = preg_replace('/\.[^.]*$/', '', $publicId);
+            return $publicId;
         }
 
-        // Eliminar la página
-        $pagina->delete();
-
-        return response()->json(['success' => 'Página eliminada correctamente.']);
+        return null;
     }
 }

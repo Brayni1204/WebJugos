@@ -33,7 +33,7 @@
                             <td>{{ Str::limit($paginas->resumen, 100, '...') }}</td>
                             <td>
                                 @if ($paginas->image_pagina)
-                                    <img src="{{ Storage::url($paginas->image_pagina->url) }}"
+                                    <img src="{{ $paginas->image_pagina->url }}"
                                         class="img-fluid rounded shadow" width="100">
                                 @else
                                     <small>Sin imagen</small>

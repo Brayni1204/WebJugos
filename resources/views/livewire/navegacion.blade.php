@@ -30,7 +30,7 @@
                             $empresa = \App\Models\Empresa::latest()->first();
                             $icono =
                                 $empresa && $empresa->favicon_url
-                                    ? asset('storage/' . $empresa->favicon_url)
+                                    ? $empresa->favicon_url
                                     : asset('default-favicon.ico');
                         @endphp
                         <img class="h-16 sm:h16 w-auto" src="{{ $icono }}" alt="Logo">

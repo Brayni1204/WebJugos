@@ -32,7 +32,7 @@
                     <!-- 📷 Imagen -->
                     @if ($subtitulo->image)
                         <div class="flex justify-center mb-6">
-                            <img src="{{ Storage::url($subtitulo->image->url) }}"
+                            <img src="{{ $subtitulo->image->url }}"
                                 alt="{{ $subtitulo->titulo_subtitulo }}"
                                 class="w-full max-w-4xl object-cover rounded-lg shadow-lg">
                         </div>
@@ -65,7 +65,7 @@
                                     <li class="flex items-center space-x-4">
                                         <!-- Imagen en Miniatura -->
                                         @if ($relacionado->image)
-                                            <img src="{{ Storage::url($relacionado->image->url) }}"
+                                            <img src="{{ $relacionado->image->url }}"
                                                 alt="{{ $relacionado->titulo_subtitulo }}"
                                                 class="w-16 h-16 object-cover rounded-lg shadow">
                                         @endif

@@ -3,14 +3,17 @@
 namespace App\Http\Controllers\admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\Pagina;
 use App\Models\Parrafo;
 use App\Models\Subtitulo;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use App\Http\Traits\ImageUploadTrait;
+use Illuminate\Support\Facades\DB;
 
 class ParrafoController extends Controller
 {
+    use ImageUploadTrait;
+
     public function index() {}
     public function create(Request $request)
     {
@@ -26,19 +29,17 @@ class ParrafoController extends Controller
             'imagen' => 'nullable|image',
         ]);
 
-        $parrafo = Parrafo::create([
-            'id_subtitulo' => $request->id_subtitulo,
-            'contenido' => $request->contenido,
-            'status' => $request->status,
-        ]);
-
-        if ($request->hasFile('imagen')) {
-            $url = $request->file('imagen')->store('Parrafo', 'public');
-            $parrafo->image()->create(['url' => $url]);
+        DB::beginTransaction();
+        try {
+            $parrafo = Parrafo::create($request->only(['id_subtitulo', 'contenido', 'status']));
+            $this->storeImage($request, $parrafo, 'imagen', 'Parrafo');
+            DB::commit();
+            return redirect()->route('admin.subtitulos.show', $request->id_subtitulo)
+                ->with('info', 'Párrafo agregado correctamente.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->withErrors(['error' => 'Error al crear el párrafo.']);
         }
-
-        return redirect()->route('admin.subtitulos.show', $request->id_subtitulo)
-            ->with('info', 'Párrafo agregado correctamente.');
     }
 
 
@@ -57,22 +58,61 @@ class ParrafoController extends Controller
             'status' => 'required|in:1,2',
             'imagen' => 'nullable|image',
         ]);
-        $parrafo->update([
-            'id_subtitulo' => $request->id_subtitulo,
-            'contenido' => $request->contenido,
-            'status' => $request->status,
-        ]);
-        if ($request->hasFile('imagen')) {
-            if ($parrafo->image) {
-                Storage::disk('public')->delete($parrafo->image->url);
-                $parrafo->image()->delete();
-            }
-            $url = $request->file('imagen')->store('Parrafo', 'public');
-            $parrafo->image()->create(['url' => $url]);
+        
+        DB::beginTransaction();
+        try {
+            $parrafo->update($request->only(['id_subtitulo', 'contenido', 'status']));
+            $this->updateImage($request, $parrafo, 'imagen', 'Parrafo');
+            DB::commit();
+            return redirect()->route('admin.subtitulos.show', $parrafo->subtitulo->id)
+                ->with('info', 'Párrafo actualizado correctamente.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->withErrors(['error' => 'Error al actualizar el párrafo.']);
         }
-        return redirect()->route('admin.subtitulos.show', $parrafo->subtitulo->id)
-            ->with('info', 'Párrafo actualizado correctamente.');
     }
 
-    public function destroy(string $id) {}
+    public function destroy(Parrafo $parrafo)
+    {
+        $subtitulo = $parrafo->Subtitulo;
+        DB::beginTransaction();
+        try {
+            if ($parrafo->image) {
+                $publicId = $this->extractPublicId($parrafo->image->getRawOriginal('url'));
+                if ($publicId) {
+                    \CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary::uploadApi()->destroy($publicId);
+                }
+                $parrafo->image()->delete();
+            }
+
+            $parrafo->delete();
+            DB::commit();
+            return redirect()->route('admin.subtitulos.show', $subtitulo->id)
+                ->with('info', 'Párrafo eliminado correctamente.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->withErrors(['error' => 'Error al eliminar el párrafo.']);
+        }
+    }
+
+    private function extractPublicId($url)
+    {
+        if (!$url) {
+            return null;
+        }
+        $parts = parse_url($url);
+        if (!isset($parts['path'])) {
+            return null;
+        }
+        $path = $parts['path'];
+
+        if (preg_match('/\/upload\/(?:v\d+\/)?(.+)/', $path, $matches)) {
+            $publicId = $matches[1];
+            // Remove file extension
+            $publicId = preg_replace('/\.[^.]*$/', '', $publicId);
+            return $publicId;
+        }
+
+        return null;
+    }
 }

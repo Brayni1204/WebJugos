@@ -54,7 +54,7 @@
 
                         {{-- Imagen Actual --}}
                         <div style="display: flex; justify-content: center">
-                            <img style="width: 180px; height: 150px;" src="{{ Storage::url($parrafo->image->url) }}"
+                            <img style="width: 180px; height: 150px;" src="{{ $parrafo->image->url }}"
                                 alt="{{ $parrafo->id_subtitulo }}" class=" object-cover rounded-lg">
                         </div>
 

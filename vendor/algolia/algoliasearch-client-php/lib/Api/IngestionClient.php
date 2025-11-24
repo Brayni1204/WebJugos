@@ -6,6 +6,8 @@ namespace Algolia\AlgoliaSearch\Api;
 
 use Algolia\AlgoliaSearch\Algolia;
 use Algolia\AlgoliaSearch\Configuration\IngestionConfig;
+use Algolia\AlgoliaSearch\Exceptions\ExceededRetriesException;
+use Algolia\AlgoliaSearch\Exceptions\NotFoundException;
 use Algolia\AlgoliaSearch\Model\Ingestion\Authentication;
 use Algolia\AlgoliaSearch\Model\Ingestion\AuthenticationCreate;
 use Algolia\AlgoliaSearch\Model\Ingestion\AuthenticationCreateResponse;
@@ -33,6 +35,7 @@ use Algolia\AlgoliaSearch\Model\Ingestion\RunListResponse;
 use Algolia\AlgoliaSearch\Model\Ingestion\RunResponse;
 use Algolia\AlgoliaSearch\Model\Ingestion\RunSourcePayload;
 use Algolia\AlgoliaSearch\Model\Ingestion\RunSourceResponse;
+use Algolia\AlgoliaSearch\Model\Ingestion\RunTaskPayload;
 use Algolia\AlgoliaSearch\Model\Ingestion\Source;
 use Algolia\AlgoliaSearch\Model\Ingestion\SourceCreate;
 use Algolia\AlgoliaSearch\Model\Ingestion\SourceCreateResponse;
@@ -43,6 +46,7 @@ use Algolia\AlgoliaSearch\Model\Ingestion\Task;
 use Algolia\AlgoliaSearch\Model\Ingestion\TaskCreate;
 use Algolia\AlgoliaSearch\Model\Ingestion\TaskCreateResponse;
 use Algolia\AlgoliaSearch\Model\Ingestion\TaskCreateV1;
+use Algolia\AlgoliaSearch\Model\Ingestion\TaskReplace;
 use Algolia\AlgoliaSearch\Model\Ingestion\TaskSearch;
 use Algolia\AlgoliaSearch\Model\Ingestion\TaskUpdate;
 use Algolia\AlgoliaSearch\Model\Ingestion\TaskUpdateResponse;
@@ -69,12 +73,17 @@ use GuzzleHttp\Psr7\Query;
  */
 class IngestionClient
 {
-    public const VERSION = '4.19.0';
+    public const VERSION = '4.35.0';
 
     /**
      * @var ApiWrapperInterface
      */
     protected $api;
+
+    /**
+     * @var IngestionClient
+     */
+    protected $ingestionTransporter;
 
     /**
      * @var IngestionConfig
@@ -116,7 +125,9 @@ class IngestionClient
             self::getClusterHosts($config)
         );
 
-        return new static($apiWrapper, $config);
+        $client = new static($apiWrapper, $config);
+
+        return $client;
     }
 
     /**
@@ -130,9 +141,9 @@ class IngestionClient
             // If a list of hosts was passed, we ignore the cache
             $clusterHosts = ClusterHosts::create($hosts);
         } else {
-            $url = null !== $config->getRegion() && '' !== $config->getRegion() ?
-                str_replace('{region}', $config->getRegion(), 'data.{region}.algolia.com') :
-                '';
+            $url = null !== $config->getRegion() && '' !== $config->getRegion()
+                ? str_replace('{region}', $config->getRegion(), 'data.{region}.algolia.com')
+                : '';
             $clusterHosts = ClusterHosts::create($url);
         }
 
@@ -272,6 +283,11 @@ class IngestionClient
     /**
      * Creates a new task.
      *
+     * Required API Key ACLs:
+     *  - addObject
+     *  - deleteIndex
+     *  - editSettings
+     *
      * @param array|TaskCreate $taskCreate Request body for creating a task. (required)
      *                                     - $taskCreate['sourceID'] => (string) Universally uniqud identifier (UUID) of a source. (required)
      *                                     - $taskCreate['destinationID'] => (string) Universally unique identifier (UUID) of a destination resource. (required)
@@ -311,6 +327,11 @@ class IngestionClient
     /**
      * Creates a new task using the v1 endpoint, please use `createTask` instead.
      *
+     * Required API Key ACLs:
+     *  - addObject
+     *  - deleteIndex
+     *  - editSettings
+     *
      * @param array|TaskCreateV1 $taskCreate Request body for creating a task. (required)
      *                                       - $taskCreate['sourceID'] => (string) Universally uniqud identifier (UUID) of a source. (required)
      *                                       - $taskCreate['destinationID'] => (string) Universally unique identifier (UUID) of a destination resource. (required)
@@ -349,9 +370,16 @@ class IngestionClient
     /**
      * Creates a new transformation.
      *
+     * Required API Key ACLs:
+     *  - addObject
+     *  - deleteIndex
+     *  - editSettings
+     *
      * @param array|TransformationCreate $transformationCreate Request body for creating a transformation. (required)
-     *                                                         - $transformationCreate['code'] => (string) The source code of the transformation. (required)
+     *                                                         - $transformationCreate['code'] => (string) It is deprecated. Use the `input` field with proper `type` instead to specify the transformation code.
      *                                                         - $transformationCreate['name'] => (string) The uniquely identified name of your transformation. (required)
+     *                                                         - $transformationCreate['type'] => (array)
+     *                                                         - $transformationCreate['input'] => (array)
      *                                                         - $transformationCreate['description'] => (string) A descriptive name for your transformation of what it does.
      *                                                         - $transformationCreate['authenticationIDs'] => (array) The authentications associated with the current transformation.
      *
@@ -381,7 +409,7 @@ class IngestionClient
     /**
      * This method lets you send requests to the Algolia REST API.
      *
-     * @param string $path           Path of the endpoint, anything after \"/1\" must be specified. (required)
+     * @param string $path           Path of the endpoint, for example `1/newFeature`. (required)
      * @param array  $parameters     Query parameters to apply to the current query. (optional)
      * @param array  $requestOptions the requestOptions to send along with the query, they will be merged with the transporter requestOptions
      *
@@ -420,7 +448,7 @@ class IngestionClient
     /**
      * This method lets you send requests to the Algolia REST API.
      *
-     * @param string $path           Path of the endpoint, anything after \"/1\" must be specified. (required)
+     * @param string $path           Path of the endpoint, for example `1/newFeature`. (required)
      * @param array  $parameters     Query parameters to apply to the current query. (optional)
      * @param array  $requestOptions the requestOptions to send along with the query, they will be merged with the transporter requestOptions
      *
@@ -459,7 +487,7 @@ class IngestionClient
     /**
      * This method lets you send requests to the Algolia REST API.
      *
-     * @param string $path           Path of the endpoint, anything after \"/1\" must be specified. (required)
+     * @param string $path           Path of the endpoint, for example `1/newFeature`. (required)
      * @param array  $parameters     Query parameters to apply to the current query. (optional)
      * @param array  $body           Parameters to send with the custom request. (optional)
      * @param array  $requestOptions the requestOptions to send along with the query, they will be merged with the transporter requestOptions
@@ -499,7 +527,7 @@ class IngestionClient
     /**
      * This method lets you send requests to the Algolia REST API.
      *
-     * @param string $path           Path of the endpoint, anything after \"/1\" must be specified. (required)
+     * @param string $path           Path of the endpoint, for example `1/newFeature`. (required)
      * @param array  $parameters     Query parameters to apply to the current query. (optional)
      * @param array  $body           Parameters to send with the custom request. (optional)
      * @param array  $requestOptions the requestOptions to send along with the query, they will be merged with the transporter requestOptions
@@ -656,6 +684,11 @@ class IngestionClient
     /**
      * Deletes a task by its ID.
      *
+     * Required API Key ACLs:
+     *  - addObject
+     *  - deleteIndex
+     *  - editSettings
+     *
      * @param string $taskID         Unique identifier of a task. (required)
      * @param array  $requestOptions the requestOptions to send along with the query, they will be merged with the transporter requestOptions
      *
@@ -689,6 +722,11 @@ class IngestionClient
 
     /**
      * Deletes a task by its ID using the v1 endpoint, please use `deleteTask` instead.
+     *
+     * Required API Key ACLs:
+     *  - addObject
+     *  - deleteIndex
+     *  - editSettings
      *
      * @param string $taskID         Unique identifier of a task. (required)
      * @param array  $requestOptions the requestOptions to send along with the query, they will be merged with the transporter requestOptions
@@ -725,6 +763,11 @@ class IngestionClient
 
     /**
      * Deletes a transformation by its ID.
+     *
+     * Required API Key ACLs:
+     *  - addObject
+     *  - deleteIndex
+     *  - editSettings
      *
      * @param string $transformationID Unique identifier of a transformation. (required)
      * @param array  $requestOptions   the requestOptions to send along with the query, they will be merged with the transporter requestOptions
@@ -1760,11 +1803,12 @@ class IngestionClient
      * @param int   $page           Page number of the paginated API response. (optional)
      * @param array $sort           Property by which to sort the list of transformations. (optional)
      * @param array $order          Sort order of the response, ascending or descending. (optional)
+     * @param array $type           Whether to filter the list of transformations by the type of transformation. (optional)
      * @param array $requestOptions the requestOptions to send along with the query, they will be merged with the transporter requestOptions
      *
      * @return array<string, mixed>|ListTransformationsResponse
      */
-    public function listTransformations($itemsPerPage = null, $page = null, $sort = null, $order = null, $requestOptions = [])
+    public function listTransformations($itemsPerPage = null, $page = null, $sort = null, $order = null, $type = null, $requestOptions = [])
     {
         $resourcePath = '/1/transformations';
         $queryParameters = [];
@@ -1787,11 +1831,86 @@ class IngestionClient
             $queryParameters['order'] = $order;
         }
 
+        if (null !== $type) {
+            $queryParameters['type'] = $type;
+        }
+
         return $this->sendRequest('GET', $resourcePath, $headers, $queryParameters, $httpBody, $requestOptions);
     }
 
     /**
-     * Push a `batch` request payload through the Pipeline. You can check the status of task pushes with the observability endpoints.
+     * Pushes records through the Pipeline, directly to an index. You can make the call synchronous by providing the `watch` parameter, for asynchronous calls, you can use the observability endpoints and/or debugger dashboard to see the status of your task. If you want to leverage the [pre-indexing data transformation](https://www.algolia.com/doc/guides/sending-and-managing-data/send-and-update-your-data/how-to/transform-your-data), this is the recommended way of ingesting your records. This method is similar to `pushTask`, but requires an `indexName` instead of a `taskID`. If zero or many tasks are found, an error will be returned.
+     *
+     * Required API Key ACLs:
+     *  - addObject
+     *  - deleteIndex
+     *  - editSettings
+     *
+     * @param string                $indexName       Name of the index on which to perform the operation. (required)
+     * @param array|PushTaskPayload $pushTaskPayload pushTaskPayload (required)
+     *                                               - $pushTaskPayload['action'] => (array)  (required)
+     *                                               - $pushTaskPayload['records'] => (array)  (required)
+     *
+     * @see PushTaskPayload
+     *
+     * @param bool   $watch              When provided, the push operation will be synchronous and the API will wait for the ingestion to be finished before responding. (optional)
+     * @param string $referenceIndexName This is required when targeting an index that does not have a push connector setup (e.g. a tmp index), but you wish to attach another index's transformation to it (e.g. the source index name). (optional)
+     * @param array  $requestOptions     the requestOptions to send along with the query, they will be merged with the transporter requestOptions
+     *
+     * @return array<string, mixed>|WatchResponse
+     */
+    public function push($indexName, $pushTaskPayload, $watch = null, $referenceIndexName = null, $requestOptions = [])
+    {
+        // verify the required parameter 'indexName' is set
+        if (!isset($indexName)) {
+            throw new \InvalidArgumentException(
+                'Parameter `indexName` is required when calling `push`.'
+            );
+        }
+        // verify the required parameter 'pushTaskPayload' is set
+        if (!isset($pushTaskPayload)) {
+            throw new \InvalidArgumentException(
+                'Parameter `pushTaskPayload` is required when calling `push`.'
+            );
+        }
+
+        $resourcePath = '/1/push/{indexName}';
+        $queryParameters = [];
+        $headers = [];
+        $httpBody = $pushTaskPayload;
+
+        if (null !== $watch) {
+            $queryParameters['watch'] = $watch;
+        }
+
+        if (null !== $referenceIndexName) {
+            $queryParameters['referenceIndexName'] = $referenceIndexName;
+        }
+
+        // path params
+        if (null !== $indexName) {
+            $resourcePath = str_replace(
+                '{indexName}',
+                ObjectSerializer::toPathValue($indexName),
+                $resourcePath
+            );
+        }
+
+        if (!isset($requestOptions['readTimeout'])) {
+            $requestOptions['readTimeout'] = 180;
+        }
+        if (!isset($requestOptions['writeTimeout'])) {
+            $requestOptions['writeTimeout'] = 180;
+        }
+        if (!isset($requestOptions['connectTimeout'])) {
+            $requestOptions['connectTimeout'] = 180;
+        }
+
+        return $this->sendRequest('POST', $resourcePath, $headers, $queryParameters, $httpBody, $requestOptions);
+    }
+
+    /**
+     * Pushes records through the pipeline, directly to an index. You can make the call synchronous by providing the `watch` parameter, for asynchronous calls, you can use the observability endpoints or the debugger dashboard to see the status of your task. If you want to transform your data before indexing, this is the recommended way of ingesting your records. This method is similar to `push`, but requires a `taskID` instead of a `indexName`, which is useful when many `destinations` target the same `indexName`.
      *
      * Required API Key ACLs:
      *  - addObject
@@ -1799,7 +1918,7 @@ class IngestionClient
      *  - editSettings
      *
      * @param string                $taskID          Unique identifier of a task. (required)
-     * @param array|PushTaskPayload $pushTaskPayload Request body of a Search API `batch` request that will be pushed in the Connectors pipeline. (required)
+     * @param array|PushTaskPayload $pushTaskPayload pushTaskPayload (required)
      *                                               - $pushTaskPayload['action'] => (array)  (required)
      *                                               - $pushTaskPayload['records'] => (array)  (required)
      *
@@ -1857,7 +1976,66 @@ class IngestionClient
     }
 
     /**
-     * Runs all tasks linked to a source, only available for Shopify sources. It will create 1 run per task.
+     * Fully updates a task by its ID, use partialUpdateTask if you only want to update a subset of fields.
+     *
+     * Required API Key ACLs:
+     *  - addObject
+     *  - deleteIndex
+     *  - editSettings
+     *
+     * @param string            $taskID      Unique identifier of a task. (required)
+     * @param array|TaskReplace $taskReplace taskReplace (required)
+     *                                       - $taskReplace['destinationID'] => (string) Universally unique identifier (UUID) of a destination resource. (required)
+     *                                       - $taskReplace['action'] => (array)  (required)
+     *                                       - $taskReplace['subscriptionAction'] => (array)
+     *                                       - $taskReplace['cron'] => (string) Cron expression for the task's schedule.
+     *                                       - $taskReplace['enabled'] => (bool) Whether the task is enabled.
+     *                                       - $taskReplace['failureThreshold'] => (int) Maximum accepted percentage of failures for a task run to finish successfully.
+     *                                       - $taskReplace['input'] => (array)
+     *                                       - $taskReplace['cursor'] => (string) Date of the last cursor in RFC 3339 format.
+     *                                       - $taskReplace['notifications'] => (array)
+     *                                       - $taskReplace['policies'] => (array)
+     *
+     * @see TaskReplace
+     *
+     * @param array $requestOptions the requestOptions to send along with the query, they will be merged with the transporter requestOptions
+     *
+     * @return array<string, mixed>|TaskUpdateResponse
+     */
+    public function replaceTask($taskID, $taskReplace, $requestOptions = [])
+    {
+        // verify the required parameter 'taskID' is set
+        if (!isset($taskID)) {
+            throw new \InvalidArgumentException(
+                'Parameter `taskID` is required when calling `replaceTask`.'
+            );
+        }
+        // verify the required parameter 'taskReplace' is set
+        if (!isset($taskReplace)) {
+            throw new \InvalidArgumentException(
+                'Parameter `taskReplace` is required when calling `replaceTask`.'
+            );
+        }
+
+        $resourcePath = '/2/tasks/{taskID}';
+        $queryParameters = [];
+        $headers = [];
+        $httpBody = $taskReplace;
+
+        // path params
+        if (null !== $taskID) {
+            $resourcePath = str_replace(
+                '{taskID}',
+                ObjectSerializer::toPathValue($taskID),
+                $resourcePath
+            );
+        }
+
+        return $this->sendRequest('PUT', $resourcePath, $headers, $queryParameters, $httpBody, $requestOptions);
+    }
+
+    /**
+     * Runs all tasks linked to a source, only available for Shopify, BigCommerce and commercetools sources. Creates one run per task.
      *
      * Required API Key ACLs:
      *  - addObject
@@ -1866,10 +2044,11 @@ class IngestionClient
      *
      * @param string                 $sourceID         Unique identifier of a source. (required)
      * @param array|RunSourcePayload $runSourcePayload (optional)
-     *                                                 - $runSourcePayload['indexToInclude'] => (array) List of index names to include in reidexing/update.
-     *                                                 - $runSourcePayload['indexToExclude'] => (array) List of index names to exclude in reidexing/update.
-     *                                                 - $runSourcePayload['entityIDs'] => (array) List of entityID to update.
+     *                                                 - $runSourcePayload['indexToInclude'] => (array) List of index names to include in reindex/update.
+     *                                                 - $runSourcePayload['indexToExclude'] => (array) List of index names to exclude in reindex/update.
+     *                                                 - $runSourcePayload['entityIDs'] => (array) List of entityIDs to update.
      *                                                 - $runSourcePayload['entityType'] => (array)
+     *                                                 - $runSourcePayload['runMetadata'] => (array) Additional information that will be passed to the created runs.
      *
      * @see RunSourcePayload
      *
@@ -1911,12 +2090,17 @@ class IngestionClient
      *  - deleteIndex
      *  - editSettings
      *
-     * @param string $taskID         Unique identifier of a task. (required)
-     * @param array  $requestOptions the requestOptions to send along with the query, they will be merged with the transporter requestOptions
+     * @param string               $taskID         Unique identifier of a task. (required)
+     * @param array|RunTaskPayload $runTaskPayload (optional)
+     *                                             - $runTaskPayload['runMetadata'] => (array) Additional information that will be passed to the created run
+     *
+     * @see RunTaskPayload
+     *
+     * @param array $requestOptions the requestOptions to send along with the query, they will be merged with the transporter requestOptions
      *
      * @return array<string, mixed>|RunResponse
      */
-    public function runTask($taskID, $requestOptions = [])
+    public function runTask($taskID, $runTaskPayload = null, $requestOptions = [])
     {
         // verify the required parameter 'taskID' is set
         if (!isset($taskID)) {
@@ -1928,7 +2112,7 @@ class IngestionClient
         $resourcePath = '/2/tasks/{taskID}/run';
         $queryParameters = [];
         $headers = [];
-        $httpBody = null;
+        $httpBody = isset($runTaskPayload) ? $runTaskPayload : [];
 
         // path params
         if (null !== $taskID) {
@@ -1950,14 +2134,19 @@ class IngestionClient
      *  - deleteIndex
      *  - editSettings
      *
-     * @param string $taskID         Unique identifier of a task. (required)
-     * @param array  $requestOptions the requestOptions to send along with the query, they will be merged with the transporter requestOptions
+     * @param string               $taskID         Unique identifier of a task. (required)
+     * @param array|RunTaskPayload $runTaskPayload (optional)
+     *                                             - $runTaskPayload['runMetadata'] => (array) Additional information that will be passed to the created run
+     *
+     * @see RunTaskPayload
+     *
+     * @param array $requestOptions the requestOptions to send along with the query, they will be merged with the transporter requestOptions
      *
      * @return array<string, mixed>|RunResponse
      *
      * @deprecated
      */
-    public function runTaskV1($taskID, $requestOptions = [])
+    public function runTaskV1($taskID, $runTaskPayload = null, $requestOptions = [])
     {
         // verify the required parameter 'taskID' is set
         if (!isset($taskID)) {
@@ -1969,7 +2158,7 @@ class IngestionClient
         $resourcePath = '/1/tasks/{taskID}/run';
         $queryParameters = [];
         $headers = [];
-        $httpBody = null;
+        $httpBody = isset($runTaskPayload) ? $runTaskPayload : [];
 
         // path params
         if (null !== $taskID) {
@@ -2247,7 +2436,9 @@ class IngestionClient
      *  - editSettings
      *
      * @param array|TransformationTry $transformationTry transformationTry (required)
-     *                                                   - $transformationTry['code'] => (string) The source code of the transformation. (required)
+     *                                                   - $transformationTry['code'] => (string) It is deprecated. Use the `input` field with proper `type` instead to specify the transformation code.
+     *                                                   - $transformationTry['type'] => (array)
+     *                                                   - $transformationTry['input'] => (array)
      *                                                   - $transformationTry['sampleRecord'] => (array) The record to apply the given code to. (required)
      *                                                   - $transformationTry['authentications'] => (array)
      *
@@ -2284,7 +2475,9 @@ class IngestionClient
      *
      * @param string                  $transformationID  Unique identifier of a transformation. (required)
      * @param array|TransformationTry $transformationTry transformationTry (required)
-     *                                                   - $transformationTry['code'] => (string) The source code of the transformation. (required)
+     *                                                   - $transformationTry['code'] => (string) It is deprecated. Use the `input` field with proper `type` instead to specify the transformation code.
+     *                                                   - $transformationTry['type'] => (array)
+     *                                                   - $transformationTry['input'] => (array)
      *                                                   - $transformationTry['sampleRecord'] => (array) The record to apply the given code to. (required)
      *                                                   - $transformationTry['authentications'] => (array)
      *
@@ -2338,7 +2531,6 @@ class IngestionClient
      * @param array|AuthenticationUpdate $authenticationUpdate authenticationUpdate (required)
      *                                                         - $authenticationUpdate['type'] => (array)
      *                                                         - $authenticationUpdate['name'] => (string) Descriptive name for the resource.
-     *                                                         - $authenticationUpdate['platform'] => (array)
      *                                                         - $authenticationUpdate['input'] => (array)
      *
      * @see AuthenticationUpdate
@@ -2486,7 +2678,12 @@ class IngestionClient
     }
 
     /**
-     * Updates a task by its ID.
+     * Partially updates a task by its ID.
+     *
+     * Required API Key ACLs:
+     *  - addObject
+     *  - deleteIndex
+     *  - editSettings
      *
      * @param string           $taskID     Unique identifier of a task. (required)
      * @param array|TaskUpdate $taskUpdate taskUpdate (required)
@@ -2540,6 +2737,11 @@ class IngestionClient
     /**
      * Updates a task by its ID using the v1 endpoint, please use `updateTask` instead.
      *
+     * Required API Key ACLs:
+     *  - addObject
+     *  - deleteIndex
+     *  - editSettings
+     *
      * @param string             $taskID     Unique identifier of a task. (required)
      * @param array|TaskUpdateV1 $taskUpdate taskUpdate (required)
      *                                       - $taskUpdate['destinationID'] => (string) Universally unique identifier (UUID) of a destination resource.
@@ -2591,10 +2793,17 @@ class IngestionClient
     /**
      * Updates a transformation by its ID.
      *
+     * Required API Key ACLs:
+     *  - addObject
+     *  - deleteIndex
+     *  - editSettings
+     *
      * @param string                     $transformationID     Unique identifier of a transformation. (required)
      * @param array|TransformationCreate $transformationCreate transformationCreate (required)
-     *                                                         - $transformationCreate['code'] => (string) The source code of the transformation. (required)
+     *                                                         - $transformationCreate['code'] => (string) It is deprecated. Use the `input` field with proper `type` instead to specify the transformation code.
      *                                                         - $transformationCreate['name'] => (string) The uniquely identified name of your transformation. (required)
+     *                                                         - $transformationCreate['type'] => (array)
+     *                                                         - $transformationCreate['input'] => (array)
      *                                                         - $transformationCreate['description'] => (string) A descriptive name for your transformation of what it does.
      *                                                         - $transformationCreate['authenticationIDs'] => (array) The authentications associated with the current transformation.
      *
@@ -2736,6 +2945,79 @@ class IngestionClient
         }
 
         return $this->sendRequest('POST', $resourcePath, $headers, $queryParameters, $httpBody, $requestOptions);
+    }
+
+    /**
+     * Helper: Chunks the given `objects` list in subset of 1000 elements max in order to make it fit in `batch` requests.
+     *
+     * @param string $indexName          the `indexName` to replace `objects` in
+     * @param array  $objects            the array of `objects` to store in the given Algolia `indexName`
+     * @param array  $action             the `batch` `action` to perform on the given array of `objects`, defaults to `addObject`
+     * @param bool   $waitForTasks       whether or not we should wait until every `batch` tasks has been processed, this operation may slow the total execution time of this method but is more reliable
+     * @param array  $batchSize          The size of the chunk of `objects`. The number of `push` calls will be equal to `length(objects) / batchSize`. Defaults to 1000.
+     * @param array  $referenceIndexName This is required when targeting an index that does not have a push connector setup (e.g. a tmp index), but you wish to attach another index's transformation to it (e.g. the source index name).
+     * @param array  $requestOptions     Request options
+     */
+    public function chunkedPush(
+        $indexName,
+        $objects,
+        $action = 'addObject',
+        $waitForTasks = true,
+        $batchSize = 1000,
+        $referenceIndexName = null,
+        $requestOptions = []
+    ) {
+        $responses = [];
+        $records = [];
+        $count = 0;
+        $offset = 0;
+        $waitBatchSize = (int) ($batchSize / 10);
+        if ($waitBatchSize < 1) {
+            $waitBatchSize = $batchSize;
+        }
+
+        foreach ($objects as $object) {
+            $records[] = $object;
+            $ok = false;
+            ++$count;
+
+            if (sizeof($records) === $batchSize || $count === sizeof($objects)) {
+                $responses[] = $this->push($indexName, ['action' => $action, 'records' => $records], false, $referenceIndexName, $requestOptions);
+                $records = [];
+            }
+
+            if ($waitForTasks && !empty($responses) && (0 === sizeof($responses) % $waitBatchSize || $count === sizeof($objects))) {
+                $timeoutCalculation = 'Algolia\AlgoliaSearch\Support\Helpers::linearTimeout';
+
+                foreach (array_slice($responses, $offset, $waitBatchSize) as $response) {
+                    $retry = 0;
+
+                    while ($retry < 50) {
+                        try {
+                            $this->getEvent($response['runID'], $response['eventID']);
+
+                            $ok = true;
+
+                            break;
+                        } catch (NotFoundException $e) {
+                            // just retry
+                        }
+
+                        ++$retry;
+                        usleep(
+                            call_user_func_array($timeoutCalculation, [$this->config->getWaitTaskTimeBeforeRetry(), $retry])
+                        );
+                    }
+
+                    if (false === $ok) {
+                        throw new ExceededRetriesException('Maximum number of retries (50) exceeded.');
+                    }
+                }
+                $offset = $offset + $waitBatchSize;
+            }
+        }
+
+        return $responses;
     }
 
     private function sendRequest($method, $resourcePath, $headers, $queryParameters, $httpBody, $requestOptions, $useReadTransporter = false)

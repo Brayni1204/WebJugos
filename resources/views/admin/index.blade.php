@@ -10,7 +10,7 @@
             @endphp
             <div class="flex justify-center">
                 <img class="h-24 md:w-96 md:h-32  object-cover"
-                    src="{{ $ultimaImagen ? asset('storage/' . $ultimaImagen->url) : 'https://tailwindui.com/plus/img/logos/mark.svg?color=indigo&shade=500' }}"
+                    src="{{ $ultimaImagen ? $ultimaImagen->url : 'https://tailwindui.com/plus/img/logos/mark.svg?color=indigo&shade=500' }}"
                     alt="Logo">
             </div>
             <p class="mt-6 text-lg md:text-xl text-gray-700 leading-relaxed">

@@ -19,7 +19,7 @@
             <div class="flex flex-col gap-10">
                 <div style="height: 300px;">
                     <article class="bg-cover bg-center w-full h-full"
-                        style="background-image: url({{ Storage::url($pagina->image_pagina->url) }}); background-size: cover; background-position: center; height: 100%; display: flex; flex-direction: column; justify-content:center;">
+                        style="background-image: url({{ $pagina->image_pagina->url }}); background-size: cover; background-position: center; height: 100%; display: flex; flex-direction: column; justify-content:center;">
                         <div class="text-center bg-white bg-opacity-75 p-6 rounded-lg shadow-lg">
                             <h2>
                                 {{ $pagina->titulo_paginas }}
@@ -39,7 +39,7 @@
                                 <h5>{{ $subtitulo->titulo_subtitulo }}</h5>
                                 <p class="text-sm">{{ $subtitulo->resumen }}</p>
                                 @if ($subtitulo->image)
-                                    <img src="{{ Storage::url($subtitulo->image->url) }}" width="200">
+                                    <img src="{{ $subtitulo->image->url }}" width="200">
                                 @endif
                                 <div class="mt-2">
                                     <a href="{{ route('admin.subtitulos.edit', $subtitulo) }}"

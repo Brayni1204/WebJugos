@@ -2,13 +2,13 @@
 
 namespace App\Providers;
 
-
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\View;
 use App\Models\Empresa;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Auth\Events\Registered;
 use App\Listeners\CreateClienteForNewUser;
+use Illuminate\Foundation\AliasLoader;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -17,7 +17,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->booting(function() {
+            $loader = AliasLoader::getInstance();
+            $loader->alias('Cloudinary', \CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary::class);
+        });
     }
 
     /**

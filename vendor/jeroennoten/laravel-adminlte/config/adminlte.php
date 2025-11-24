@@ -53,7 +53,7 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | admin Panel Logo
+    | Admin Panel Logo
     |--------------------------------------------------------------------------
     |
     | Here you can change the logo of your admin panel.
@@ -63,12 +63,12 @@ return [
     |
     */
 
-    'logo' => '<b>admin</b>LTE',
+    'logo' => '<b>Admin</b>LTE',
     'logo_img' => 'vendor/adminlte/dist/img/AdminLTELogo.png',
     'logo_img_class' => 'brand-image img-circle elevation-3',
     'logo_img_xl' => null,
     'logo_img_xl_class' => 'brand-image-xs',
-    'logo_img_alt' => 'admin Logo',
+    'logo_img_alt' => 'Admin Logo',
 
     /*
     |--------------------------------------------------------------------------
@@ -180,7 +180,7 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | admin Panel Classes
+    | Admin Panel Classes
     |--------------------------------------------------------------------------
     |
     | Here you can change the look and behavior of the admin panel.

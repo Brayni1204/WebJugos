@@ -51,7 +51,7 @@
                                     <td>{{ $producto->id }}</td>
                                     <td>
                                         @if ($producto->image && $producto->image->isNotEmpty())
-                                            <img src="{{ Storage::url($producto->image->first()->url) }}"
+                                            <img src="{{ $producto->image->first()->url }}"
                                                 class="img-thumbnail shadow-sm" width="50">
                                         @else
                                             <i class="fas fa-image-slash text-muted"> Sin imagen</i>

@@ -8,7 +8,7 @@
         $empresa = \App\Models\Empresa::latest()->first();
         $favicon =
             $empresa && $empresa->favicon_url
-                ? asset('storage/' . $empresa->favicon_url)
+                ? $empresa->favicon_url
                 : asset('default-favicon.ico');
     @endphp
     <title>{{ $empresa->nombre }}</title>
@@ -99,7 +99,7 @@
                                     $urlRelativa = $primeraImagen ? $primeraImagen->url : '';
 
                                     // Construye la URL final, será 'storage/' si la urlRelativa es vacía, lo cual es inofensivo.
-                                    $imagenUrl = asset('storage/' . $urlRelativa);
+                                    $imagenUrl = $urlRelativa;
 
                                     // Si prefieres usar la URL de la imagen por defecto del proyecto si no hay imagen asociada:
                                     // $imagenUrl = $primeraImagen ? asset('storage/' . $primeraImagen->url) : asset('default-image.png');
@@ -113,7 +113,7 @@
 
                                     <div class="w-full aspect-[4/5] overflow-hidden rounded-md">
                                         @if ($producto->image->isNotEmpty())
-                                            <img src="{{ asset('storage/' . $producto->image->first()->url) }}"
+                                            <img src="{{ $producto->image->first()->url }}"
                                                 alt="{{ $producto->nombre_producto }}"
                                                 class="w-full h-full object-cover">
                                         @else

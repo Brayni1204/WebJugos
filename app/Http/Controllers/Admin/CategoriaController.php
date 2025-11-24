@@ -6,18 +6,20 @@ use App\Http\Controllers\Controller;
 use App\Models\Categoria;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use App\Http\Traits\ImageUploadTrait;
+use Illuminate\Support\Facades\DB;
 
 class CategoriaController extends Controller
 {
+    use ImageUploadTrait;
+
     public function index(Request $request)
     {
         $query = Categoria::query();
-        // Aplicar filtro de búsqueda
         if ($request->has('search')) {
             $search = $request->search;
             $query->where('nombre_categoria', 'like', "%$search%");
         }
-        // Paginar las categorías
         $categorias = $query->paginate(10);
         return view('admin.categoria.index', compact('categorias'));
     }
@@ -27,7 +29,6 @@ class CategoriaController extends Controller
     }
     public function store(Request $request)
     {
-        // Validación de datos
         $request->validate([
             'nombre_categoria' => 'required|unique:categorias,nombre_categoria|max:100',
             'descripcion'      => 'nullable|string',
@@ -35,22 +36,16 @@ class CategoriaController extends Controller
             'imagen'           => 'nullable|image|mimes:jpg,png,jpeg'
         ]);
 
-        // Crear nueva categoría
-        $categorium = Categoria::create([
-            'nombre_categoria' => $request->nombre_categoria,
-            'descripcion'      => $request->descripcion,
-            'status'           => $request->status,
-        ]);
-
-        // Si hay imagen, guardarla
-        if ($request->hasFile('imagen')) {
-            $url = $request->file('imagen')->store('Categoria', 'public');
-            $categorium->image()->create(['url' => $url]);
+        DB::beginTransaction();
+        try {
+            $categorium = Categoria::create($request->only(['nombre_categoria', 'descripcion', 'status']));
+            $this->storeImage($request, $categorium, 'imagen', 'Categoria');
+            DB::commit();
+            return redirect()->route('admin.categoria.index')->with('success', 'Categoría creada correctamente.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->withErrors(['error' => 'Error al crear la categoría: ' . $e->getMessage()])->withInput();
         }
-
-        return redirect()
-            ->route('admin.categoria.index')
-            ->with('success', 'Categoría creada correctamente.');
     }
 
     public function show(Categoria $categorium)
@@ -69,34 +64,35 @@ class CategoriaController extends Controller
             'status'           => 'required|in:1,2',
             'imagen'           => 'nullable|image|mimes:jpg,png,jpeg'
         ]);
-        $categorium->update([
-            'nombre_categoria' => $request->nombre_categoria,
-            'descripcion'      => $request->descripcion,
-            'status'           => $request->status,
-        ]);
-        if ($request->hasFile('imagen')) {
-            if ($categorium->image->count()) {
-                Storage::disk('public')->delete($categorium->image->first()->url);
-                $categorium->image()->delete();
-            }
-            $url = $request->file('imagen')->store('Categoria', 'public');
-            $categorium->image()->create(['url' => $url]);
+
+        DB::beginTransaction();
+        try {
+            $categorium->update($request->only(['nombre_categoria', 'descripcion', 'status']));
+            $this->updateImage($request, $categorium, 'imagen', 'Categoria');
+            DB::commit();
+            return redirect()->route('admin.categoria.index')->with('success', 'Categoría actualizada correctamente.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->withErrors(['error' => 'Error al actualizar la categoría: ' . $e->getMessage()])->withInput();
         }
-        return redirect()
-            ->route('admin.categoria.index')
-            ->with('success', 'Categoría actualizada correctamente.');
     }
     public function destroy(Categoria $categorium)
     {
-        // Borrar imagen si existe
-        if ($categorium->image->count()) {
-            Storage::disk('public')->delete($categorium->image->first()->url);
-            $categorium->image()->delete();
+        DB::beginTransaction();
+        try {
+            if ($categorium->image->count()) {
+                foreach ($categorium->image as $image) {
+                    Storage::delete($image->getRawOriginal('url'));
+                }
+                $categorium->image()->delete();
+            }
+
+            $categorium->delete();
+            DB::commit();
+            return response()->json(['success' => 'Categoría eliminada correctamente.']);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json(['error' => 'Error al eliminar la categoría.'], 500);
         }
-
-        // Eliminar categoría
-        $categorium->delete();
-
-        return response()->json(['success' => 'Categoría eliminada correctamente.']);
     }
 }

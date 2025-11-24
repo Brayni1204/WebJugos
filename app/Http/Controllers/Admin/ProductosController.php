@@ -7,11 +7,13 @@ use App\Models\Producto;
 use App\Models\Categoria;
 use App\Models\Precio;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
+use App\Http\Traits\ImageUploadTrait;
 
 class ProductosController extends Controller
 {
+    use ImageUploadTrait;
+
     public function index(Request $request)
     {
         $query = Producto::with('categoria', 'precios', 'image')->orderBy('id', 'desc');
@@ -49,15 +51,14 @@ class ProductosController extends Controller
                 'precio_venta' => $request->precio_venta,
                 'precio_compra' => $request->precio_compra,
             ]);
-            if ($request->hasFile('imagen')) {
-                $url = $request->file('imagen')->store('Producto', 'public');
-                $producto->image()->create(['url' => $url]);
-            }
+            
+            $this->storeImage($request, $producto, 'imagen', 'Producto');
+
             DB::commit();
             return redirect()->route('admin.producto.index')->with('success', 'Producto creado correctamente.');
         } catch (\Exception $e) {
             DB::rollBack();
-            return back()->withErrors(['error' => 'Error al crear el producto.'])->withInput();
+            return back()->withErrors(['error' => 'Error al crear el producto: ' . $e->getMessage()])->withInput();
         }
     }
     public function show(Producto $producto)
@@ -84,16 +85,8 @@ class ProductosController extends Controller
 
         DB::beginTransaction();
         try {
-            // **Actualizar datos del producto**
-            $producto->update([
-                'id_categoria' => $request->id_categoria,
-                'nombre_producto' => $request->nombre_producto,
-                'descripcion' => $request->descripcion,
-                'stock' => $request->stock,
-                'status' => $request->status,
-            ]);
+            $producto->update($request->only(['id_categoria', 'nombre_producto', 'descripcion', 'stock', 'status']));
 
-            // **Actualizar precios**
             $precioCompra = $request->precio_compra !== null ? $request->precio_compra : $request->precio_venta;
 
             if ($producto->precios) {
@@ -102,7 +95,6 @@ class ProductosController extends Controller
                     'precio_compra' => $precioCompra,
                 ]);
             } else {
-                // Si el producto no tiene precio registrado, lo creamos
                 Precio::create([
                     'id_producto' => $producto->id,
                     'precio_venta' => $request->precio_venta,
@@ -110,35 +102,32 @@ class ProductosController extends Controller
                 ]);
             }
 
-            // **Actualizar imagen si el usuario sube una nueva**
-            if ($request->hasFile('imagen')) {
-                // Eliminar imagen anterior si existe
-                if ($producto->image()->exists()) {
-                    Storage::disk('public')->delete($producto->image->first()->url);
-                    $producto->image()->delete();
-                }
-
-                // Guardar la nueva imagen
-                $url = $request->file('imagen')->store('Producto', 'public');
-                $producto->image()->create(['url' => $url]);
-            }
+            $this->updateImage($request, $producto, 'imagen', 'Producto');
 
             DB::commit();
             return redirect()->route('admin.producto.index')->with('success', 'Producto actualizado correctamente.');
         } catch (\Exception $e) {
             DB::rollBack();
-            return back()->withErrors(['error' => 'Error al actualizar el producto.'])->withInput();
+            return back()->withErrors(['error' => 'Error al actualizar el producto: ' . $e->getMessage()])->withInput();
         }
     }
     public function destroy(Producto $producto)
     {
-        if ($producto->image()->exists()) {
-            Storage::disk('public')->delete($producto->image->first()->url);
-            $producto->image()->delete();
+        DB::beginTransaction();
+        try {
+            if ($producto->image->count()) {
+                foreach ($producto->image as $image) {
+                    Storage::delete($image->getRawOriginal('url'));
+                }
+                $producto->image()->delete();
+            }
+
+            $producto->delete();
+            DB::commit();
+            return response()->json(['success' => 'Producto eliminado correctamente.']);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json(['error' => 'Error al eliminar el producto.'], 500);
         }
-
-        $producto->delete();
-
-        return response()->json(['success' => 'Producto eliminado correctamente.']);
     }
 }

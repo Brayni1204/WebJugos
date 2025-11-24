@@ -77,7 +77,7 @@
                         <div class="form-group">
                             <label>Imagen Actual</label><br>
                             @if ($producto->image()->exists())
-                                <img id="preview_actual" src="{{ Storage::url($producto->image->first()->url) }}"
+                                <img id="preview_actual" src="{{ $producto->image->first()->url }}"
                                     class="image-preview">
                             @else
                                 <p><small>Sin imagen</small></p>

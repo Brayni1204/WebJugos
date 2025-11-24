@@ -75,7 +75,7 @@
                             <input type="file" name="favicon" id="favicon" class="form-control" accept="image/*"
                                 onchange="previewImage(event, 'faviconPreview')">
                             <div class="text-center mt-2">
-                                <img id="faviconPreview" src="{{ asset('storage/' . $empresa->favicon_url) }}"
+                                <img id="faviconPreview" src="{{ $empresa->favicon_url }}"
                                     class="img-thumbnail" width="150">
                             </div>
                         </div>
@@ -85,7 +85,7 @@
                                 onchange="previewImage(event, 'imagePreview')">
                             <div class="text-center mt-2">
                                 @if ($empresa->image_m)
-                                    <img id="imagePreview" src="{{ asset('storage/' . $empresa->image_m->url) }}"
+                                    <img id="imagePreview" src="{{ $empresa->image_m->url }}"
                                         class="img-thumbnail" width="150">
                                 @else
                                     <img id="imagePreview" src="{{ asset('storage/default.png') }}"

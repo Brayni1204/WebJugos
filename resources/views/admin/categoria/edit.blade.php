@@ -52,7 +52,7 @@
                                 <div>
                                     <label>Imagen Actual:</label><br>
                                     @if ($categorium->image->count())
-                                        <img src="{{ Storage::url($categorium->image->first()->url) }}" width="100">
+                                        <img src="{{ $categorium->image->first()->url }}" width="100">
                                     @else
                                         <small>Sin imagen</small>
                                     @endif
