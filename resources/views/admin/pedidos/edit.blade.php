@@ -566,7 +566,7 @@
     <script>
         document.addEventListener("DOMContentLoaded", function() {
             function connectWebSocket() {
-                const socket = new WebSocket("ws://127.0.0.1:8090");
+                const socket = new WebSocket('wss://merakifruit.techinnovats.com/ws/');
 
                 socket.onopen = () => console.log("🟢 Conexión WebSocket establecida en la página de EDICIÓN.");
                 socket.onclose = () => setTimeout(connectWebSocket, 3000);
