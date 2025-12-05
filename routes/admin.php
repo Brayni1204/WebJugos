@@ -67,7 +67,7 @@ Route::resource('nuevodetallepedido', CreandoNuevosPedidosDetalleController::cla
 Route::get('nuevodetallepedido/{pedidoId}/detalles', [CreandoNuevosPedidosDetalleController::class, 'obtenerDetallesPedido'])->name('admin.nuevospedidosdetalleadmin.detalles');
 
 // ... (dentro de tu grupo de rutas de administrador)
-Route::get('/nuevopedido/actualizar-tabla', [App\Http\Controllers\admin\CreandoNuevosPedidosController::class, 'actualizarTabla'])->name('admin.nuevospedidos.actualizarTabla');
+Route::get('/pedidos/actualizar-tabla', [App\Http\Controllers\admin\CreandoNuevosPedidosController::class, 'actualizarTabla'])->name('admin.pedidos.actualizarTabla');
 
 /* Route::get('pedidos/{pedido}/comprobante', [CreandoNuevosPedidosController::class, 'generarComprobante'])->name('admin.pedidos.generarComprobante'); */
 Route::post('pedidos/{pedido}/completar', [CreandoNuevosPedidosController::class, 'completarPedido'])->name('admin.pedidos.completar');

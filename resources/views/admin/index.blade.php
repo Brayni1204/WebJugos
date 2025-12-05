@@ -15,7 +15,6 @@
             </div>
             <p class="mt-6 text-lg md:text-xl text-gray-700 leading-relaxed">
                 ¡Bienvenido Administrador!
-
             </p>
             <div class="mt-6">
                 <a href="{{ route('admin.pedidos.index') }}"

@@ -179,8 +179,9 @@ class CreandoNuevosPedidosController extends Controller
     public function obtenerComprobante($id)
     {
         try {
-            $pedido = Pedido::with(['cliente', 'detalles.producto'])->findOrFail($id);
-            return view('admin.pedidos.comprobante', compact('pedido'));
+            $pedido = Pedido::with(['cliente', 'detalles.producto', 'pagos'])->findOrFail($id);
+            $empresa = Empresa::first();
+            return view('admin.pedidos.comprobante', compact('pedido', 'empresa'));
         } catch (\Exception $e) {
             return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
         }
@@ -189,9 +190,10 @@ class CreandoNuevosPedidosController extends Controller
     public function obtenerComprobanteDetalle($id)
     {
         try {
-            $pedido = Pedido::with(['cliente', 'detalles.producto'])->findOrFail($id);
+            $pedido = Pedido::with(['cliente', 'detalles.producto', 'pagos'])->findOrFail($id);
+            $empresa = Empresa::first();
 
-            $html = view('admin.pedidos.comprobantedetalle', compact('pedido'))->render();
+            $html = view('admin.pedidos.comprobantedetalle', compact('pedido', 'empresa'))->render();
 
             return response()->json(['success' => true, 'html' => $html]);
         } catch (\Exception $e) {

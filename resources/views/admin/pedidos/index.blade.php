@@ -369,24 +369,34 @@
 
     <script>
         function imprimirPedido(pedidoId) {
-            let url = `{{ route('admin.pedidos.comprobante', ['id' => '__ID__']) }}`.replace('__ID__',
-                pedidoId);
+            let url = `{{ route('admin.pedidos.comprobante', ['id' => '__ID__']) }}`.replace('__ID__', pedidoId);
+
+            // Crear un iframe oculto
+            let iframe = document.createElement('iframe');
+            iframe.style.display = 'none';
+            document.body.appendChild(iframe);
 
             fetch(url)
                 .then(response => response.text())
                 .then(html => {
-                    let ventanaImpresion = window.open('', '_blank');
-                    ventanaImpresion.document.open();
-                    ventanaImpresion.document.write(html);
-                    ventanaImpresion.document.close();
+                    // Escribir el HTML del comprobante en el iframe
+                    iframe.contentDocument.open();
+                    iframe.contentDocument.write(html);
+                    iframe.contentDocument.close();
 
-                    setTimeout(() => {
-                        ventanaImpresion.print();
-                        ventanaImpresion.close();
-                    }, 500);
+                    // Esperar a que el contenido del iframe (incluyendo imágenes) se cargue
+                    iframe.onload = function() {
+                        setTimeout(function() {
+                            // Llamar a la función de impresión del iframe
+                            iframe.contentWindow.print();
+                            // Eliminar el iframe después de imprimir
+                            document.body.removeChild(iframe);
+                        }, 250); // Un pequeño retardo para asegurar que todo se renderice
+                    };
                 })
                 .catch(error => {
                     console.error("Error al obtener el comprobante:", error);
+                    document.body.removeChild(iframe); // Limpiar en caso de error
                     Swal.fire("Error", "No se pudo cargar el comprobante.", "error");
                 });
         }
@@ -397,7 +407,7 @@
         document.addEventListener("DOMContentLoaded", function() {
             // Función que pide el nuevo contenido de la tabla y lo reemplaza
             function actualizarContenidoTabla() {
-                fetch("{{ route('admin.nuevospedidos.actualizarTabla') }}")
+                fetch("{{ route('admin.pedidos.actualizarTabla') }}")
                     .then(response => response.text())
                     .then(html => {
                         document.getElementById('tabla-pedidos-body').innerHTML = html;

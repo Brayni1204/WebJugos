@@ -326,29 +326,40 @@
         }
 
         function imprimirPedido(pedidoId, redirectUrl) {
-            let url = `{{ route('admin.pedidos.comprobantedetalle', ['id' => '__ID__']) }}`.replace('__ID__',
-                pedidoId);
+            let url = `{{ route('admin.pedidos.comprobantedetalle', ['id' => '__ID__']) }}`.replace('__ID__', pedidoId);
+
+            // Crear un iframe oculto
+            let iframe = document.createElement('iframe');
+            iframe.style.display = 'none';
+            document.body.appendChild(iframe);
 
             fetch(url)
                 .then(response => response.json())
                 .then(data => {
                     if (data.success && data.html) {
-                        let ventanaImpresion = window.open('', '');
-                        ventanaImpresion.document.open();
-                        ventanaImpresion.document.write(data.html);
-                        ventanaImpresion.document.close();
+                        // Escribir el HTML del comprobante en el iframe
+                        iframe.contentDocument.open();
+                        iframe.contentDocument.write(data.html);
+                        iframe.contentDocument.close();
 
-                        setTimeout(() => {
-                            ventanaImpresion.print();
-                            ventanaImpresion.close();
-                            window.location.href = redirectUrl;
-                        }, 500);
+                        // Esperar a que el contenido del iframe se cargue
+                        iframe.onload = function() {
+                            setTimeout(function() {
+                                iframe.contentWindow.print();
+                                document.body.removeChild(iframe); // Eliminar el iframe
+                                if (redirectUrl) {
+                                    window.location.href = redirectUrl; // Redirigir después de imprimir
+                                }
+                            }, 250);
+                        };
                     } else {
+                        document.body.removeChild(iframe);
                         Swal.fire("Error", "No se pudo generar el comprobante.", "error");
                     }
                 })
                 .catch(error => {
                     console.error("Error en la solicitud AJAX:", error);
+                    document.body.removeChild(iframe);
                     Swal.fire("Error", "Hubo un error en la conexión con el servidor.", "error");
                 });
         }
