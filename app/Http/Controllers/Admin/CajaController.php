@@ -7,6 +7,7 @@ use App\Models\Cliente;
 use App\Models\DetalleVenta;
 use App\Models\Pedido;
 use App\Models\Producto;
+use App\Models\Categoria;
 use App\Models\Venta;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -18,7 +19,8 @@ class CajaController extends Controller
 {
     public function index()
     {
-        return view('admin.reportes.index');
+        $categorias = Categoria::all();
+        return view('admin.reportes.index', compact('categorias'));
     }
 
     private function obtenerEstadisticas($ventas)
@@ -284,16 +286,45 @@ class CajaController extends Controller
     }
 
 
+    private function filtrarVentas(Request $request)
+    {
+        $query = Venta::query();
+
+        // Filtro de fecha
+        if ($request->filled('fecha_inicio') && $request->filled('fecha_fin')) {
+            $fechaInicio = Carbon::parse($request->input('fecha_inicio'))->startOfDay();
+            $fechaFin = Carbon::parse($request->input('fecha_fin'))->endOfDay();
+            $query->whereBetween('created_at', [$fechaInicio, $fechaFin]);
+        }
+
+        // Filtro de categoría
+        if ($request->filled('categoria_id')) {
+            $query->whereHas('detalles', function ($q) use ($request) {
+                $q->whereHas('producto', function ($q2) use ($request) {
+                    $q2->where('id_categoria', $request->input('categoria_id'));
+                });
+            });
+        }
+        
+        return $query;
+    }
+
     // 🔹 Nuevo: Reporte General para el Dashboard
     public function reporteGeneral(Request $request)
     {
         try {
             // Validar y parsear fechas
-            $fechaInicio = Carbon::parse($request->input('fecha_inicio'))->startOfDay();
-            $fechaFin = Carbon::parse($request->input('fecha_fin'))->endOfDay();
+            $request->validate([
+                'fecha_inicio' => 'required|date',
+                'fecha_fin' => 'required|date|after_or_equal:fecha_inicio',
+                'categoria_id' => 'nullable|integer|exists:categorias,id'
+            ]);
 
-            // Obtener todas las ventas en el rango
-            $ventas = Venta::whereBetween('created_at', [$fechaInicio, $fechaFin])->get();
+            // Obtener la consulta base de ventas filtradas
+            $ventasQuery = $this->filtrarVentas($request);
+
+            // Clonar la consulta para obtener los resultados
+            $ventas = $ventasQuery->clone()->get();
             $ventaIds = $ventas->pluck('id');
 
             // Calcular estadísticas de resumen
@@ -345,6 +376,8 @@ class CajaController extends Controller
                 'ventas_por_metodo_pago' => $ventasPorMetodo,
             ]);
 
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json(['error' => 'Datos de entrada inválidos.', 'messages' => $e->errors()], 422);
         } catch (\Exception $e) {
             return response()->json(['error' => 'Error al generar el reporte general', 'message' => $e->getMessage()], 500);
         }

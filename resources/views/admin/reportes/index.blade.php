@@ -86,13 +86,28 @@
             <h3 class="card-title">Reportes</h3>
         </div>
         <div class="card-body">
-            <div class="form-group">
-                <label for="daterange" class="form-label"><strong>Seleccionar Rango de Fechas:</strong></label>
-                <div class="input-group">
-                    <div class="input-group-prepend">
-                        <span class="input-group-text"><i class="far fa-calendar-alt"></i></span>
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label for="daterange" class="form-label"><strong>Seleccionar Rango de Fechas:</strong></label>
+                        <div class="input-group">
+                            <div class="input-group-prepend">
+                                <span class="input-group-text"><i class="far fa-calendar-alt"></i></span>
+                            </div>
+                            <input type="text" id="daterange" class="form-control" />
+                        </div>
                     </div>
-                    <input type="text" id="daterange" class="form-control" />
+                </div>
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label for="categoria" class="form-label"><strong>Filtrar por Categoría:</strong></label>
+                        <select id="categoria" class="form-control">
+                            <option value="">Todas las categorías</option>
+                            @foreach($categorias as $categoria)
+                                <option value="{{ $categoria->id }}">{{ $categoria->nombre_categoria }}</option>
+                            @endforeach
+                        </select>
+                    </div>
                 </div>
             </div>
         </div>
@@ -323,7 +338,11 @@
 
             // Función para actualizar el dashboard
             function updateDashboard(startDate, endDate) {
-                const url = `{{ route('admin.reportes.general') }}?fecha_inicio=${startDate}&fecha_fin=${endDate}`;
+                const categoriaId = $('#categoria').val();
+                let url = `{{ route('admin.reportes.general') }}?fecha_inicio=${startDate}&fecha_fin=${endDate}`;
+                if (categoriaId) {
+                    url += `&categoria_id=${categoriaId}`;
+                }
 
                 // Mostrar overlay de carga
                 $('body').append('<div class="overlay"><i class="fas fa-2x fa-sync-alt fa-spin"></i></div>');
@@ -370,7 +389,10 @@
                         }
 
                         // 5. Actualizar enlaces de exportación
-                        const exportParams = `fecha_inicio=${startDate}&fecha_fin=${endDate}`;
+                        let exportParams = `fecha_inicio=${startDate}&fecha_fin=${endDate}`;
+                        if (categoriaId) {
+                            exportParams += `&categoria_id=${categoriaId}`;
+                        }
                         $('#exportProductosExcel').attr('href', `{{ route('admin.reportes.export.productos', 'xlsx') }}?${exportParams}`);
                         $('#exportProductosPdf').attr('href', `{{ route('admin.reportes.export.productos', 'pdf') }}?${exportParams}`);
                         $('#exportClientesExcel').attr('href', `{{ route('admin.reportes.export.clientes', 'xlsx') }}?${exportParams}`);
@@ -388,6 +410,13 @@
                     });
             }
 
+            // Evento al cambiar el filtro de categoría
+            $('#categoria').on('change', function() {
+                const startDate = daterangeInput.data('daterangepicker').startDate.format('YYYY-MM-DD');
+                const endDate = daterangeInput.data('daterangepicker').endDate.format('YYYY-MM-DD');
+                updateDashboard(startDate, endDate);
+            });
+			
             // Función para obtener las ventas del día
             function updateVentasDelDia() {
                 const url = `{{ route('admin.reportes.ventasPorDia') }}`;
@@ -407,7 +436,7 @@
             daterangeInput.on('apply.daterangepicker', function(ev, picker) {
                 updateDashboard(picker.startDate.format('YYYY-MM-DD'), picker.endDate.format('YYYY-MM-DD'));
             });
-
+			
             // Carga inicial de datos
             updateDashboard(daterangeInput.data('daterangepicker').startDate.format('YYYY-MM-DD'), daterangeInput
                 .data('daterangepicker').endDate.format('YYYY-MM-DD'));
