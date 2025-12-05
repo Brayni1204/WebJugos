@@ -226,9 +226,9 @@
         @endif
 
          
-        <a href="{{ route('admin.pedidos.ticket', $pedido->id) }}" class="floating-btn" title="Ticket Cocina" target="_blank" style="background-color: #ffc107;">
+        <button type="button" onclick="imprimirTicketCocina({{ $pedido->id }})" class="floating-btn" title="Imprimir Ticket de Cocina" style="background-color: #ffc107;">
             <i class="fas fa-receipt"></i>
-        </a>
+        </button>
 
          
         <a href="{{ route('admin.pedidos.index') }}" class="floating-btn back-btn" title="Regresar">
@@ -324,4 +324,27 @@
 
 @section('js')
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        function imprimirTicketCocina(pedidoId) {
+            let url = `{{ route('admin.pedidos.ticket', ['pedido' => '__ID__']) }}`.replace('__ID__', pedidoId);
+
+            // Crear un iframe oculto
+            let iframe = document.createElement('iframe');
+            iframe.style.display = 'none';
+            document.body.appendChild(iframe);
+
+            // Set the iframe's src to the ticket URL
+            iframe.src = url;
+
+            // Wait for the iframe to load its content
+            iframe.onload = function() {
+                setTimeout(function() {
+                    // Call the print function of the iframe's window
+                    iframe.contentWindow.print();
+                    // Remove the iframe from the DOM after printing
+                    document.body.removeChild(iframe);
+                }, 500); // A short delay to ensure rendering is complete
+            };
+        }
+    </script>
 @stop
