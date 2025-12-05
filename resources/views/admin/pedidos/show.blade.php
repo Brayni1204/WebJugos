@@ -1,50 +1,50 @@
 @extends('adminlte::page')
 
-@section('title', 'Pedido Detalle')
+@section('title', 'Detalle del Pedido')
 
 @section('content')
     <div class="container mx-auto ">
-        <h2 class="text-center font-bold text-2xl text-gray-800">Detalle del Pedido {{ $nuevopedidoadmin->id }}</h2>
+        <h2 class="text-center font-bold text-2xl text-gray-800">Detalle del Pedido {{ $pedido->id }}</h2>
 
         <!-- Dirección de Entrega -->
-        @if ($nuevopedidoadmin->direccion)
+        @if ($pedido->direccion)
             <div class="bg-white shadow-lg rounded-lg p-6 mt-2">
                 <h4 class="font-bold text-lg text-gray-700 mb-1 border-b pb-2">📍 Dirección de Entrega</h4>
                 <div class="grid grid-cols-3 gap-4 text-gray-600">
                     <div class="flex items-center space-x-2">
                         <span class="font-semibold">Departamento:</span>
-                        <span>{{ $nuevopedidoadmin->direccion->departamento }}</span>
+                        <span>{{ $pedido->direccion->departamento }}</span>
                     </div>
                     <div class="flex items-center space-x-2">
                         <span class="font-semibold">Provincia:</span>
-                        <span>{{ $nuevopedidoadmin->direccion->provincia }}</span>
+                        <span>{{ $pedido->direccion->provincia }}</span>
                     </div>
                     <div class="flex items-center space-x-2">
                         <span class="font-semibold">Distrito:</span>
-                        <span>{{ $nuevopedidoadmin->direccion->distrito }}</span>
+                        <span>{{ $pedido->direccion->distrito }}</span>
                     </div>
                     <div class="flex items-center space-x-2">
                         <span class="font-semibold">Calle:</span>
-                        <span>{{ $nuevopedidoadmin->direccion->calle }}</span>
+                        <span>{{ $pedido->direccion->calle }}</span>
                     </div>
                     <div class="col-span-2 flex items-center space-x-2">
                         <span class="font-semibold">N°:</span>
-                        <span>{{ $nuevopedidoadmin->direccion->numero }}</span>
+                        <span>{{ $pedido->direccion->numero }}</span>
                     </div>
                 </div>
             </div>
         @endif
 
         <!-- Timeline del Estado del Pedido -->
-        @if ($nuevopedidoadmin->estadoPedidos->isNotEmpty())
+        @if ($pedido->estadoPedidos->isNotEmpty())
             <div class="bg-white shadow-lg rounded-lg p-6 mt-2">
                 <h4 class="font-bold text-lg text-gray-700 mb-2">Estado del Pedido</h4>
                 <div id="estadoPedidoContainer" class="flex items-center justify-between relative mt-1">
                     @php
                         $estados = ['En local', 'En camino', 'En tu Dirección', 'Entregado'];
-                        $estado_actual = $nuevopedidoadmin->estadoPedidos->last()->estado;
+                        $estado_actual = $pedido->estadoPedidos->last()->estado;
                         $indice_actual = array_search($estado_actual, $estados);
-                        $estado_fechas = $nuevopedidoadmin->estadoPedidos->pluck('created_at', 'estado');
+                        $estado_fechas = $pedido->estadoPedidos->pluck('created_at', 'estado');
                     @endphp
 
                     @foreach ($estados as $index => $estado)
@@ -79,7 +79,7 @@
                 </div>
 
                 <div>
-                    @if ($nuevopedidoadmin->estadoPedidos->last()->estado != 'Entregado')
+                    @if ($pedido->estadoPedidos->last()->estado != 'Entregado')
                         <button id="actualizarEstadoBtn" class="btn btn-primary mt-4">Actualizar Estado</button>
                     @endif
                 </div>
@@ -88,9 +88,9 @@
 
         <script>
             document.getElementById("actualizarEstadoBtn")?.addEventListener("click", function() {
-                let pedidoId = {{ $nuevopedidoadmin->id }};
+                let pedidoId = {{ $pedido->id }};
 
-                fetch("{{ route('pedidos.cambiarEstado', $nuevopedidoadmin->id) }}", {
+                fetch("{{ route('pedidos.cambiarEstado', $pedido->id) }}", {
                         method: "POST",
                         headers: {
                             "X-CSRF-TOKEN": "{{ csrf_token() }}",
@@ -167,7 +167,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach ($nuevopedidoadmin->detalles as $detalle)
+                        @foreach ($pedido->detalles as $detalle)
                             <tr class="text-center">
                                 <td class="border p-2">{{ $detalle->producto->nombre_producto ?? 'Producto Eliminado' }}
                                 </td>
@@ -187,30 +187,30 @@
             <!-- Información del Pedido -->
             <div class="bg-white shadow-lg rounded-lg p-6">
                 <h4 class="font-bold text-lg text-gray-700 mb-2">Información del Pedido</h4>
-                <p><strong>Fecha:</strong> {{ $nuevopedidoadmin->created_at->format('d/m/Y H:i') }}</p>
-                <p><strong>Estado:</strong> <span class="text-blue-600">{{ ucfirst($nuevopedidoadmin->estado) }}</span></p>
-                <p><strong>Método de Entrega:</strong> {{ ucfirst($nuevopedidoadmin->metodo_entrega) }}</p>
-                <p><strong>Método de Pago:</strong> {{ ucfirst($nuevopedidoadmin->metodo_pago ?? 'N/A') }}</p>
+                <p><strong>Fecha:</strong> {{ $pedido->created_at->format('d/m/Y H:i') }}</p>
+                <p><strong>Estado:</strong> <span class="text-blue-600">{{ ucfirst($pedido->estado) }}</span></p>
+                <p><strong>Método de Entrega:</strong> {{ ucfirst($pedido->metodo_entrega) }}</p>
+                <p><strong>Método de Pago:</strong> {{ ucfirst($pedido->metodo_pago ?? 'N/A') }}</p>
                 <p><strong>Total Pagado:</strong> <span class="text-green-600 font-semibold">S/.
-                        {{ number_format($nuevopedidoadmin->total_pago, 2) }}</span></p>
+                        {{ number_format($pedido->total_pago, 2) }}</span></p>
             </div>
 
             <!-- Información del Cliente -->
-            @if ($nuevopedidoadmin->cliente)
+            @if ($pedido->cliente)
                 <div class="bg-white shadow-lg rounded-lg p-6">
                     <h4 class="font-bold text-lg text-gray-700 mb-2">Cliente</h4>
-                    <p><strong>Nombre:</strong> {{ $nuevopedidoadmin->cliente->nombre }}</p>
-                    <p><strong>Email:</strong> {{ $nuevopedidoadmin->cliente->email }}</p>
-                    <p><strong>Teléfono:</strong> {{ $nuevopedidoadmin->cliente->telefono }}</p>
+                    <p><strong>Nombre:</strong> {{ $pedido->cliente->nombre }}</p>
+                    <p><strong>Email:</strong> {{ $pedido->cliente->email }}</p>
+                    <p><strong>Teléfono:</strong> {{ $pedido->cliente->telefono }}</p>
                 </div>
             @endif
 
             <!-- Información de la Mesa -->
-            @if ($nuevopedidoadmin->mesa)
+            @if ($pedido->mesa)
                 <div class="bg-white shadow-lg rounded-lg p-6">
                     <h4 class="font-bold text-lg text-gray-700 mb-2">Mesa</h4>
-                    <p><strong>Número de Mesa:</strong> {{ $nuevopedidoadmin->mesa->numero_mesa }}</p>
-                    <p><strong>Estado:</strong> {{ ucfirst($nuevopedidoadmin->mesa->estado) }}</p>
+                    <p><strong>Número de Mesa:</strong> {{ $pedido->mesa->numero_mesa }}</p>
+                    <p><strong>Estado:</strong> {{ ucfirst($pedido->mesa->estado) }}</p>
                 </div>
             @endif
         </div>
@@ -218,17 +218,20 @@
 
     </div>
     <div class="floating-btn-container">
-        <!-- 🔹 Botón para Agregar Subtítulo -->
-        @if ($nuevopedidoadmin->estado === 'pendiente')
-            <!-- 🔹 Botón para Editar (Solo si el estado es Pendiente) -->
-            <a href="{{ route('admin.nuevospedidosadmin.edit', $nuevopedidoadmin->id) }}" class="floating-btn"
+        @if ($pedido->estado === 'pendiente')
+            <a href="{{ route('admin.pedidos.edit', $pedido->id) }}" class="floating-btn"
                 title="Ir a Editar">
                 <i class="fas fa-edit"></i>
             </a>
         @endif
 
-        <!-- 🔙 Botón para Regresar -->
-        <a href="{{ route('admin.nuevospedidosadmin.index') }}" class="floating-btn back-btn" title="Regresar">
+         
+        <a href="{{ route('admin.pedidos.ticket', $pedido->id) }}" class="floating-btn" title="Ticket Cocina" target="_blank" style="background-color: #ffc107;">
+            <i class="fas fa-receipt"></i>
+        </a>
+
+         
+        <a href="{{ route('admin.pedidos.index') }}" class="floating-btn back-btn" title="Regresar">
             <i class="fas fa-arrow-left"></i>
         </a>
     </div>
@@ -239,10 +242,10 @@
     <style>
         .floating-btn-container {
             position: fixed;
-            bottom: 10px;
-            right: 0px;
+            bottom: 2px;
+            right: 2px;
             display: grid;
-            gap: 10px;
+            gap: 12px;
             align-items: center;
         }
 

@@ -28,14 +28,14 @@
         </td>
         <td width="200px">
             <div style="display: flex; justify-content: center; gap:2px">
-                <a href="{{ route('admin.nuevospedidosadmin.edit', $pedido->id) }}" class="btn btn-sm"
+                <a href="{{ route('admin.pedidos.edit', $pedido->id) }}" class="btn btn-sm"
                     style="{{ $pedido->estado === 'cancelado' || $pedido->estado === 'completado' ? 'pointer-events: none; background-color: #B0B0B0; opacity: 0.6;' : '' }}">
                     <i class="fas fa-edit fa-lg" style="color: blue;font-size: 20px"></i>
                 </a>
-                <a href="{{ route('admin.nuevospedidosadmin.show', $pedido->id) }}" class="btn btn-sm">
+                <a href="{{ route('admin.pedidos.show', $pedido->id) }}" class="btn btn-sm">
                     <i class="fas fa-eye fa-lg" style="color: rgb(255, 123, 0);font-size: 20px"></i>
                 </a>
-                <form action="{{ route('admin.nuevospedidosadmin.destroy', $pedido) }}" method="POST"
+                <form action="{{ route('admin.pedidos.destroy', $pedido) }}" method="POST"
                     class="d-inline">
                     @csrf
                     @method('DELETE')

@@ -15,7 +15,7 @@
                 <div class="row justify-content-start align-items-center gap-2">
                     <!-- Botón Nuevo Pedido -->
                     <div class="col-12 col-md-auto">
-                        <a href="{{ route('admin.nuevospedidosadmin.create') }}" class="btn btn-primary w-100 md:w-auto">
+                        <a href="{{ route('admin.pedidos.create') }}" class="btn btn-primary w-100 md:w-auto">
                             <i class="fas fa-plus"></i> Nuevo Pedido
                         </a>
                     </div>
@@ -86,18 +86,18 @@
                                 <td width="200px">
                                     <div style="display: flex; justify-content: center; gap:2px">
                                         {{-- ✏ Icono para editar --}}
-                                        <a href="{{ route('admin.nuevospedidosadmin.edit', $pedido->id) }}"
+                                        <a href="{{ route('admin.pedidos.edit', $pedido->id) }}"
                                             class="btn btn-sm"
                                             style="{{ $pedido->estado === 'cancelado' || $pedido->estado === 'completado' ? 'pointer-events: none; background-color: #B0B0B0; opacity: 0.6;' : '' }}">
                                             <i class="fas fa-edit fa-lg" style="color: blue;font-size: 20px"></i>
                                         </a>
 
-                                        <a href="{{ route('admin.nuevospedidosadmin.show', $pedido->id) }}"
+                                        <a href="{{ route('admin.pedidos.show', $pedido->id) }}"
                                             class="btn btn-sm">
                                             <i class="fas fa-eye fa-lg" style="color: rgb(255, 123, 0);font-size: 20px"></i>
                                         </a>
 
-                                        <form action="{{ route('admin.nuevospedidosadmin.destroy', $pedido) }}"
+                                        <form action="{{ route('admin.pedidos.destroy', $pedido) }}"
                                             method="POST" class="d-inline">
                                             @csrf
                                             @method('DELETE')
@@ -129,7 +129,7 @@
             </div>
         </div>
         <div class="floating-btn-container">
-            <a href="{{ route('admin.nuevospedidosadmin.create') }}" class="floating-btn" title="Nuevo Pedido">
+            <a href="{{ route('admin.pedidos.create') }}" class="floating-btn" title="Nuevo Pedido">
                 <i class="fas fa-plus"></i>
             </a>
 
@@ -236,9 +236,9 @@
             let filtro = document.getElementById('buscarPedido').value.trim().toLowerCase();
 
             if (filtro === '') {
-                window.location.href = `{{ route('admin.nuevospedidosadmin.index') }}`;
+                window.location.href = `{{ route('admin.pedidos.index') }}`;
             } else {
-                window.location.href = `{{ route('admin.nuevospedidosadmin.index') }}?estado=${filtro}`;
+                window.location.href = `{{ route('admin.pedidos.index') }}?estado=${filtro}`;
             }
         }
 
@@ -369,7 +369,7 @@
 
     <script>
         function imprimirPedido(pedidoId) {
-            let url = `{{ route('admin.nuevospedidosadmin.comprobante', ['id' => '__ID__']) }}`.replace('__ID__',
+            let url = `{{ route('admin.pedidos.comprobante', ['id' => '__ID__']) }}`.replace('__ID__',
                 pedidoId);
 
             fetch(url)

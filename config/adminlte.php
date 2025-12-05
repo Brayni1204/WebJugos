@@ -154,7 +154,7 @@ return [
         [
             'text' => 'Pedidos',
             'icon' => 'fas fa-shopping-cart',
-            'route' => 'admin.nuevospedidosadmin.index',
+            'route' => 'admin.pedidos.index',
             'can'   => 'admin.pedidos.index',
         ],
         [

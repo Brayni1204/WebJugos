@@ -138,7 +138,7 @@ class CreandoNuevosPedidosDetalleController extends Controller
 
             return response()->json([
                 'success' => true,
-                'html' => view('admin.nuevospedidosadmin.partials.detalles_pedido', compact('pedido'))->render(),
+                'html' => view('admin.pedidos.partials.detalles_pedido', compact('pedido'))->render(),
                 'total' => number_format($pedido->subtotal, 2) // 🔥 Enviamos el total actualizado
             ]);
         } catch (\Exception $e) {

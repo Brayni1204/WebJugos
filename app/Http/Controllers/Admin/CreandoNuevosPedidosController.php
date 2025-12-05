@@ -32,7 +32,7 @@ class CreandoNuevosPedidosController extends Controller
 
         $empresa = Empresa::first();
 
-        return view('admin.nuevospedidosadmin.index', compact('pedidos', 'empresa'));
+        return view('admin.pedidos.index', compact('pedidos', 'empresa'));
     }
 
     public function create()
@@ -42,7 +42,7 @@ class CreandoNuevosPedidosController extends Controller
         })->where('status', 1)->get(); // Solo productos activos
         $categoriasventa = Categoria::where('status', 1)->get();
         $mesasdisponibles = Mesa::where('estado', 'disponible')->where('status', '1')->get();
-        return view('admin.nuevospedidosadmin.create', compact('productosventa', 'categoriasventa', 'mesasdisponibles'));
+        return view('admin.pedidos.create', compact('productosventa', 'categoriasventa', 'mesasdisponibles'));
     }
 
     public function store(Request $request)
@@ -106,7 +106,7 @@ class CreandoNuevosPedidosController extends Controller
             // Responder con JSON para el `fetch()`
             return response()->json([
                 'success' => true,
-                'redirect' => route('admin.nuevospedidosadmin.edit', $pedido->id)
+                'redirect' => route('admin.pedidos.edit', $pedido->id)
             ]);
         } catch (\Exception $e) {
             return response()->json([
@@ -116,9 +116,9 @@ class CreandoNuevosPedidosController extends Controller
         }
     }
 
-    public function show(Pedido $nuevopedidoadmin)
+    public function show(Pedido $pedido)
     {
-        $nuevopedidoadmin->load([
+        $pedido->load([
             'cliente',
             'mesa',
             'detalles.producto',
@@ -126,7 +126,7 @@ class CreandoNuevosPedidosController extends Controller
             'pagos',
             'direccion'
         ]);
-        return view('admin.nuevospedidosadmin.show', compact('nuevopedidoadmin'));
+        return view('admin.pedidos.show', compact('pedido'));
     }
 
     public function cambiarEstado(Pedido $pedido)
@@ -160,11 +160,11 @@ class CreandoNuevosPedidosController extends Controller
         return response()->json(['success' => false, 'message' => 'No se puede actualizar más el estado']);
     }
 
-    public function edit(Pedido $nuevopedidoadmin)
+    public function edit(Pedido $pedido)
     {
         // Cargar detalles del pedido
-        $nuevopedidoadmin->load('detalles');
-        if (!$nuevopedidoadmin) {
+        $pedido->load('detalles');
+        if (!$pedido) {
             abort(404, 'Pedido no encontrado');
         }
         $productosventa = Producto::whereHas('categoria', function ($query) {
@@ -173,14 +173,14 @@ class CreandoNuevosPedidosController extends Controller
 
         $categoriasventa = Categoria::where('status', 1)->get();
         $empresa = Empresa::first();
-        return view('admin.nuevospedidosadmin.edit', compact('empresa', 'nuevopedidoadmin', 'productosventa', 'categoriasventa'));
+        return view('admin.pedidos.edit', compact('empresa', 'pedido', 'productosventa', 'categoriasventa'));
     }
 
     public function obtenerComprobante($id)
     {
         try {
             $pedido = Pedido::with(['cliente', 'detalles.producto'])->findOrFail($id);
-            return view('admin.nuevospedidosadmin.comprobante', compact('pedido'));
+            return view('admin.pedidos.comprobante', compact('pedido'));
         } catch (\Exception $e) {
             return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
         }
@@ -191,7 +191,7 @@ class CreandoNuevosPedidosController extends Controller
         try {
             $pedido = Pedido::with(['cliente', 'detalles.producto'])->findOrFail($id);
 
-            $html = view('admin.nuevospedidosadmin.comprobantedetalle', compact('pedido'))->render();
+            $html = view('admin.pedidos.comprobantedetalle', compact('pedido'))->render();
 
             return response()->json(['success' => true, 'html' => $html]);
         } catch (\Exception $e) {
@@ -199,7 +199,7 @@ class CreandoNuevosPedidosController extends Controller
         }
     }
 
-    public function update(Request $request, Pedido $nuevopedidoadmin)
+    public function update(Request $request, Pedido $pedido)
     {
         // Validar que al menos uno de los dos campos esté presente
         $request->validate([
@@ -246,13 +246,13 @@ class CreandoNuevosPedidosController extends Controller
         }
 
         // Asignar el ID del cliente al pedido
-        $nuevopedidoadmin->cliente_id = $cliente->id;
-        $nuevopedidoadmin->save();
+        $pedido->cliente_id = $cliente->id;
+        $pedido->save();
 
         return redirect()->back()->with('success', 'Cliente actualizado correctamente en el pedido.');
     }
 
-    public function destroy(Pedido $nuevopedidoadmin) {}
+    public function destroy(Pedido $pedido) {}
 
     public function completarPedido(Pedido $pedido, Request $request)
     {
@@ -317,7 +317,7 @@ class CreandoNuevosPedidosController extends Controller
 
             return response()->json([
                 'success' => true,
-                'redirect' => route('admin.nuevospedidosadmin.index') // 🔹 Redirigir a la vista de pedidos nuevos
+                'redirect' => route('admin.pedidos.index') // 🔹 Redirigir a la vista de pedidos nuevos
             ]);
         } catch (\Exception $e) {
             return response()->json(['error' => 'Error al completar el pedido.'], 500);
@@ -329,7 +329,7 @@ class CreandoNuevosPedidosController extends Controller
         try {
             $pedido->load(['cliente', 'detalles']);
             $empresa = Empresa::first();
-            $pdf = Pdf::loadView('admin.nuevospedidosadmin.comprobante', compact('pedido', 'empresa'));
+            $pdf = Pdf::loadView('admin.pedidos.comprobante', compact('pedido', 'empresa'));
             return $pdf->stream('Comprobante_Pedido_' . $pedido->id . '.pdf');
         } catch (\Exception $e) {
             return response()->json(['error' => 'Error al generar el comprobante.'], 500);
@@ -360,8 +360,14 @@ class CreandoNuevosPedidosController extends Controller
         $pedidos = Pedido::with('cliente')->orderBy('created_at', 'desc')->paginate(10);
 
         // Devuelve solo la vista parcial de la tabla
-        return view('admin.nuevospedidosadmin.partials.tabla_pedidos', compact('pedidos'))->render();
+        return view('admin.pedidos.partials.tabla_pedidos', compact('pedidos'))->render();
     }
+        public function generarTicketCocina(Pedido $pedido)
+    {
+        $pedido->load('detalles.producto', 'mesa');
+        return view('admin.pedidos.ticket_cocina', compact('pedido'));
+    }
+
     private function enviarNotificacion($mensaje)
     {
         try {

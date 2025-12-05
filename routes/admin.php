@@ -56,12 +56,12 @@ Route::get('reportes/reporte-ventas', [CajaController::class, 'reporteVentas'])-
 
 
 
-Route::resource('nuevopedidoadmin', CreandoNuevosPedidosController::class)->names('admin.nuevospedidosadmin');
+Route::resource('pedidos', CreandoNuevosPedidosController::class)->names('admin.pedidos');
 Route::post('/pedidos/{pedido}/cambiar-estado', [CreandoNuevosPedidosController::class, 'cambiarEstado'])
     ->name('pedidos.cambiarEstado');
 
-Route::get('pedidos/{id}/comprobante', [CreandoNuevosPedidosController::class, 'obtenerComprobante'])->name('admin.nuevospedidosadmin.comprobante');
-Route::get('pedidos/{id}/comprobantedetalle', [CreandoNuevosPedidosController::class, 'obtenerComprobanteDetalle'])->name('admin.nuevospedidosadmin.comprobantedetalle');
+Route::get('pedidos/{id}/comprobante', [CreandoNuevosPedidosController::class, 'obtenerComprobante'])->name('admin.pedidos.comprobante');
+Route::get('pedidos/{id}/comprobantedetalle', [CreandoNuevosPedidosController::class, 'obtenerComprobanteDetalle'])->name('admin.pedidos.comprobantedetalle');
 
 Route::resource('nuevodetallepedido', CreandoNuevosPedidosDetalleController::class)->names('admin.nuevospedidosdetalleadmin');
 Route::get('nuevodetallepedido/{pedidoId}/detalles', [CreandoNuevosPedidosDetalleController::class, 'obtenerDetallesPedido'])->name('admin.nuevospedidosdetalleadmin.detalles');
@@ -71,6 +71,7 @@ Route::get('/nuevopedido/actualizar-tabla', [App\Http\Controllers\admin\CreandoN
 
 /* Route::get('pedidos/{pedido}/comprobante', [CreandoNuevosPedidosController::class, 'generarComprobante'])->name('admin.pedidos.generarComprobante'); */
 Route::post('pedidos/{pedido}/completar', [CreandoNuevosPedidosController::class, 'completarPedido'])->name('admin.pedidos.completar');
+Route::get('pedidos/{pedido}/ticket-cocina', [CreandoNuevosPedidosController::class, 'generarTicketCocina'])->name('admin.pedidos.ticket');
 Route::post('pedidos/{pedido}/cancelar', [CreandoNuevosPedidosController::class, 'cancelarPedido'])->middleware('auth')->name('admin.pedidos.cancelar');
 
 Route::resource('ventas', VentaController::class)->middleware('can:admin.ventas.index')->names('admin.ventas');

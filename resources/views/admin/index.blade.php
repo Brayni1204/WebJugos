@@ -18,7 +18,7 @@
 
             </p>
             <div class="mt-6">
-                <a href="{{ route('admin.nuevospedidosadmin.index') }}"
+                <a href="{{ route('admin.pedidos.index') }}"
                     class="bg-blue-500 text-white text-lg font-semibold px-6 py-3 rounded-lg shadow-md transition duration-300">
                     Ir a Pedidos
                 </a>

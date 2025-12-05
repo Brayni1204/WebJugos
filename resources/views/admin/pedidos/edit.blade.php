@@ -48,7 +48,7 @@
                                                     <tr data-id="{{ $producto->id }}"
                                                         data-nombre="{{ $producto->nombre_producto }}"
                                                         data-precio="{{ $producto->precios->precio_venta ?? '10' }}"
-                                                        data-imagen="{{ $producto->image->first())->url ?? 'no-image.jpg')) }}"
+                                                        data-imagen="{{ $producto->image->first()->url ?? 'no-image.jpg' }}"
                                                         data-categoria="{{ $producto->id_categoria }}">
                                                         <td>{{ $producto->nombre_producto }}</td>
                                                         <td>{{ $producto->precios->precio_venta ?? '10' }}</td>
@@ -105,7 +105,7 @@
                                         </tr>
                                     </thead>
                                     <tbody id="productosLista" class="text-center">
-                                        @foreach ($nuevopedidoadmin->detalles as $detalle)
+                                        @foreach ($pedido->detalles as $detalle)
                                             <tr data-id="{{ $detalle->id }}">
                                                 <td>{{ $detalle->descripcion }}</td>
                                                 <td>
@@ -137,7 +137,7 @@
 
                             <div>
                                 <div class="mb-3 text-end">
-                                    <h3>Total: S/. <span id="TotalPedido">{{ $nuevopedidoadmin->subtotal }}</span></h3>
+                                    <h3>Total: S/. <span id="TotalPedido">{{ $pedido->subtotal }}</span></h3>
                                 </div>
                             </div>
                         </div>
@@ -146,24 +146,24 @@
                             <div class="mt-6 p-1 bg-white shadow-md rounded-lg">
                                 <h2 class="text-lg font-bold text-gray-800">Información del Cliente</h2>
 
-                                <form action="{{ route('admin.nuevospedidosadmin.update', $nuevopedidoadmin->id) }}"
+                                <form action="{{ route('admin.pedidos.update', $pedido->id) }}"
                                     method="POST">
                                     @csrf
                                     @method('PUT')
-                                    <input type="hidden" name="pedido_id" value="{{ $nuevopedidoadmin->id }}">
+                                    <input type="hidden" name="pedido_id" value="{{ $pedido->id }}">
                                     <div style="display: ruby;">
                                         <div class="flex flex-wrap md:flex-nowrap gap-4">
                                             <div class="w-full md:w-1/2">
                                                 <label for="nombre" class="text-gray-500 text-lg">Nombre:</label>
                                                 <input type="text" name="nombre" id="nombre"
                                                     class="w-full p-2 border rounded"
-                                                    value="{{ $nuevopedidoadmin->cliente->nombre ?? '' }}"
+                                                    value="{{ $pedido->cliente->nombre ?? '' }}"
                                                     autocomplete="off">
 
                                                 <label for="email" class="text-gray-500 text-lg">Correo:</label>
                                                 <input type="email" name="email" id="email"
                                                     class="w-full p-2 border rounded"
-                                                    value="{{ $nuevopedidoadmin->cliente->email ?? '' }}"
+                                                    value="{{ $pedido->cliente->email ?? '' }}"
                                                     autocomplete="off">
                                             </div>
                                         </div>
@@ -185,14 +185,14 @@
 
                         <div class="floating-btn-container">
                             <button type="button" class="floating-btn" title="Realizar venta"
-                                onclick="procesarPedido('{{ route('admin.pedidos.completar', $nuevopedidoadmin) }}', obtenerTotalPedido(), {{ $nuevopedidoadmin->id }})"
-                                style="{{ $nuevopedidoadmin->estado === 'cancelado' || $nuevopedidoadmin->estado === 'completado' ? 'pointer-events: none; background-color: #B0B0B0; opacity: 0.6;' : '' }}"
-                                {{ $nuevopedidoadmin->estado === 'cancelado' || $nuevopedidoadmin->estado === 'completado' ? 'disabled' : '' }}>
+                                onclick="procesarPedido('{{ route('admin.pedidos.completar', $pedido) }}', obtenerTotalPedido(), {{ $pedido->id }})"
+                                style="{{ $pedido->estado === 'cancelado' || $pedido->estado === 'completado' ? 'pointer-events: none; background-color: #B0B0B0; opacity: 0.6;' : '' }}"
+                                {{ $pedido->estado === 'cancelado' || $pedido->estado === 'completado' ? 'disabled' : '' }}>
                                 <i class="fas fa-save"></i>
                             </button>
 
 
-                            <a href="{{ route('admin.nuevospedidosadmin.index') }}" class="floating-btn back-btn"
+                            <a href="{{ route('admin.pedidos.index') }}" class="floating-btn back-btn"
                                 title="Regresar">
                                 <i class="fas fa-arrow-left"></i>
                             </a>
@@ -326,7 +326,7 @@
         }
 
         function imprimirPedido(pedidoId, redirectUrl) {
-            let url = `{{ route('admin.nuevospedidosadmin.comprobantedetalle', ['id' => '__ID__']) }}`.replace('__ID__',
+            let url = `{{ route('admin.pedidos.comprobantedetalle', ['id' => '__ID__']) }}`.replace('__ID__',
                 pedidoId);
 
             fetch(url)
@@ -412,7 +412,7 @@
 
     <script>
         function actualizarTablaProductos() {
-            fetch("{{ route('admin.nuevospedidosdetalleadmin.detalles', $nuevopedidoadmin->id) }}")
+            fetch("{{ route('admin.nuevospedidosdetalleadmin.detalles', $pedido->id) }}")
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
@@ -476,7 +476,7 @@
                 .map(cb => cb.value);
 
             const data = {
-                pedido_id: "{{ $nuevopedidoadmin->id }}",
+                pedido_id: "{{ $pedido->id }}",
                 producto_id: productoSeleccionado.id,
                 cantidad: 1,
                 caracteristicas: caracteristicasSeleccionadas,

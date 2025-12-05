@@ -125,7 +125,7 @@
 
                             <div class="floating-btn-container">
                                 <!-- 🔙 Botón para Regresar -->
-                                <a href="{{ route('admin.nuevospedidosadmin.index') }}" class="floating-btn back-btn"
+                                <a href="{{ route('admin.pedidos.index') }}" class="floating-btn back-btn"
                                     title="Regresar">
                                     <i class="fas fa-arrow-left"></i>
                                 </a>
@@ -244,7 +244,7 @@
             };
 
 
-            fetch("{{ route('admin.nuevospedidosadmin.store') }}", {
+            fetch("{{ route('admin.pedidos.store') }}", {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json",
