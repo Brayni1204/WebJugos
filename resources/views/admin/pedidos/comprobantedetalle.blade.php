@@ -116,8 +116,11 @@
 <body>
     <div class="receipt">
         <div class="receipt-header">
-            @if ($empresa && $empresa->image_m->first())
-                <img src="{{ $empresa->image_m->first()->url }}" alt="Logo" class="logo">
+            @php
+                $ultimaImagen = $empresa ? $empresa->image_m()->latest()->first() : null;
+            @endphp
+            @if ($ultimaImagen)
+                <img src="{{ $ultimaImagen->url }}" alt="Logo" class="logo">
             @endif
             <h1>{{ $empresa->nombre ?? 'Nombre de la Empresa' }}</h1>
             <p>Dirección: {{ $empresa->calle ?? '' }}, {{ $empresa->distrito ?? '' }}, {{ $empresa->provincia ?? '' }}, {{ $empresa->departamento ?? '' }}</p>
