@@ -4,7 +4,7 @@
             $empresa = \App\Models\Empresa::latest()->first();
             $icono =
                 $empresa && $empresa->favicon_url
-                    ? asset('storage/' . $empresa->favicon_url)
+                    ? $empresa->favicon_url
                     : asset('default-favicon.ico');
         @endphp
         <x-slot name="logo">

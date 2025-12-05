@@ -406,7 +406,9 @@
             }
 
             function connectWebSocket() {
-                const socket = new WebSocket("ws://127.0.0.1:8090");
+                // CAMBIA ESTO EN TU JAVASCRIPT:
+                // const socket = new WebSocket('ws://127.0.0.1:8090'); // ❌ MAL
+                const socket = new WebSocket('ws://merakifruit.techinnovats.com:8090'); // ✅ BIEN (apunta al VPS)
 
                 socket.onopen = () => console.log("🟢 Conexión WebSocket establecida en la página principal.");
                 socket.onclose = () => setTimeout(connectWebSocket, 10000); // Intenta reconectar

@@ -22,12 +22,14 @@ trait ImageUploadTrait
                 $image->imageable_id = $model->id;
                 $image->imageable_type = get_class($model);
                 $image->save();
-                \Log::info('Image created successfully for storeImage (manual).');
             } catch (\Exception $e) {
+                // Log the actual error for debugging
                 \Log::error('Error creating image in storeImage (manual): ' . $e->getMessage());
+                // Rethrow the exception so the controller can handle the rollback
+                throw $e; 
             }
         } else {
-            \Log::info('No file present for storeImage for model: ' . get_class($model));
+            // No file present, nothing to do
         }
     }
 
@@ -80,12 +82,14 @@ trait ImageUploadTrait
                 $image->imageable_id = $model->id;
                 $image->imageable_type = get_class($model);
                 $image->save();
-                \Log::info('Image created successfully for updateImage (manual).');
             } catch (\Exception $e) {
+                // Log the actual error for debugging
                 \Log::error('Error creating image in updateImage (manual): ' . $e->getMessage());
+                // Rethrow the exception so the controller can handle the rollback
+                throw $e;
             }
         } else {
-            \Log::info('No file present for updateImage for model: ' . get_class($model));
+            // No file present, nothing to do
         }
     }
 

@@ -75,7 +75,30 @@ class EmpresaController extends Controller
 
         return redirect()->route('admin.empresa.index')->with('success', 'Empresa actualizada correctamente.');
     }
-    public function destroy(Empresa $empresa) {}
+    public function destroy(Empresa $empresa)
+    {
+        // Delete favicon from Cloudinary if it exists
+        if ($empresa->favicon_url) {
+            $publicId = $this->extractPublicId($empresa->favicon_url);
+            if ($publicId) {
+                Cloudinary::uploadApi()->destroy($publicId);
+            }
+        }
+
+        // Delete main image from Cloudinary and database (morphOne relationship)
+        if ($empresa->image_m) {
+            $publicId = $this->extractPublicId($empresa->image_m->getRawOriginal('url'));
+            if ($publicId) {
+                Cloudinary::uploadApi()->destroy($publicId);
+            }
+            $empresa->image_m()->delete();
+        }
+
+        // Delete the Empresa record
+        $empresa->delete();
+
+        return redirect()->route('admin.empresa.index')->with('success', 'Empresa eliminada correctamente.');
+    }
 
     private function extractPublicId($url)
     {

@@ -2,11 +2,10 @@
     <x-authentication-card>
             @php
                 $empresa = \App\Models\Empresa::latest()->first();
-                $icono =
-                    $empresa && $empresa->favicon_url
-                        ? asset('storage/' . $empresa->favicon_url)
-                        : asset('default-favicon.ico');
-            @endphp
+                                            $icono =
+                                                $empresa && $empresa->favicon_url
+                                                    ? $empresa->favicon_url
+                                                    : asset('default-favicon.ico');            @endphp
             <x-slot name="logo">
                 <img class="h-16 sm:h16 w-auto" src="{{ $icono }}" alt="Logo">
             </x-slot>

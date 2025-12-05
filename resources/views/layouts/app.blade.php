@@ -11,7 +11,7 @@
         $empresa = \App\Models\Empresa::latest()->first(); // Obtener el último registro
         $favicon =
             $empresa && $empresa->favicon_url
-                ? asset('storage/' . $empresa->favicon_url)
+                ? $empresa->favicon_url
                 : asset('default-favicon.ico');
     @endphp
     <title>{{ $empresa->nombre ?? 'My Empresa' }}</title>

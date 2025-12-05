@@ -48,7 +48,7 @@
                                                     <tr data-id="{{ $producto->id }}"
                                                         data-nombre="{{ $producto->nombre_producto }}"
                                                         data-precio="{{ $producto->precios->precio_venta ?? '10' }}"
-                                                        data-imagen="{{ asset('storage/' . (optional($producto->image->first())->url ?? 'no-image.jpg')) }}"
+                                                        data-imagen="{{ $producto->image->first())->url ?? 'no-image.jpg')) }}"
                                                         data-categoria="{{ $producto->id_categoria }}">
                                                         <td>{{ $producto->nombre_producto }}</td>
                                                         <td>{{ $producto->precios->precio_venta ?? '10' }}</td>
